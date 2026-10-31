@@ -1,0 +1,238 @@
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@source '../**/*.{ts,tsx}';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans:
+    var(--font-roboto), 'Roboto', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-roboto-mono), 'Roboto Mono', ui-monospace, monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-tertiary: var(--tertiary);
+  --color-tertiary-foreground: var(--tertiary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* job order status */
+  --color-open: var(--open);
+  --color-open-soft: var(--open-soft);
+  --color-filled: var(--filled);
+  --color-filled-soft: var(--filled-soft);
+  --color-hold: var(--hold);
+  --color-hold-soft: var(--hold-soft);
+  --color-closed: var(--closed);
+  --color-closed-soft: var(--closed-soft);
+  --color-draft: var(--draft);
+  --color-draft-soft: var(--draft-soft);
+
+  /* candidate pipeline, sourced through placed */
+  --color-stage-1: var(--stage-1);
+  --color-stage-2: var(--stage-2);
+  --color-stage-3: var(--stage-3);
+  --color-stage-4: var(--stage-4);
+  --color-stage-5: var(--stage-5);
+  --color-stage-6: var(--stage-6);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  color-scheme: light;
+  --radius: 0.5rem;
+
+  /* surfaces */
+  --background: #f4f6f3;
+  --foreground: #1b2426;
+  --card: #ffffff;
+  --card-foreground: #1b2426;
+  --popover: #ffffff;
+  --popover-foreground: #1b2426;
+
+  /* brand */
+  --primary: #354f52;
+  --primary-foreground: #f4f7f4;
+  --secondary: #e5eae5;
+  --secondary-foreground: #2f3e46;
+  --tertiary: #52796f;
+  --tertiary-foreground: #ffffff;
+
+  /* support */
+  --muted: #eaeeea;
+  --muted-foreground: #5a6a68;
+  --accent: #dde7e0;
+  --accent-foreground: #2f3e46;
+  --destructive: #a5423a;
+  --destructive-foreground: #ffffff;
+
+  /* lines */
+  --border: #dde2dd;
+  --input: #c6cec8;
+  --ring: #52796f;
+
+  /* job order status */
+  --open: #2c6d8c;
+  --open-soft: #e2eef4;
+  --filled: #3d7d55;
+  --filled-soft: #e2f0e7;
+  --hold: #8a6512;
+  --hold-soft: #f6eedc;
+  --closed: #9a4a44;
+  --closed-soft: #f6e8e7;
+  --draft: #6c7873;
+  --draft-soft: #ebeeec;
+
+  /* pipeline */
+  --stage-1: #cad2c5;
+  --stage-2: #a7bdae;
+  --stage-3: #84a98c;
+  --stage-4: #52796f;
+  --stage-5: #354f52;
+  --stage-6: #35845a;
+
+  /* analytics */
+  --chart-1: #354f52;
+  --chart-2: #2c6d8c;
+  --chart-3: #84a98c;
+  --chart-4: #b07b25;
+  --chart-5: #8b6a9c;
+
+  /* sidebar — one step back from card */
+  --sidebar: #eceeea;
+  --sidebar-foreground: #2f3e46;
+  --sidebar-primary: #354f52;
+  --sidebar-primary-foreground: #f4f7f4;
+  --sidebar-accent: #dde7e0;
+  --sidebar-accent-foreground: #2f3e46;
+  --sidebar-border: #dbe0db;
+  --sidebar-ring: #52796f;
+}
+
+.dark {
+  color-scheme: dark;
+
+  /* surfaces */
+  --background: #0f1416;
+  --foreground: #e8ecea;
+  --card: #161d1f;
+  --card-foreground: #f2f5f3;
+  --popover: #1c2426;
+  --popover-foreground: #f2f5f3;
+
+  /* brand — sage lifted, hue held */
+  --primary: #84a98c;
+  --primary-foreground: #0e1b16;
+  --secondary: #212a2b;
+  --secondary-foreground: #d5dcd8;
+  --tertiary: #a7c1ab;
+  --tertiary-foreground: #12211a;
+
+  /* support */
+  --muted: #1a2223;
+  --muted-foreground: #95a09c;
+  --accent: #24332f;
+  --accent-foreground: #cad2c5;
+  --destructive: #e57a70;
+  --destructive-foreground: #2a0a08;
+
+  /* lines */
+  --border: #2a3436;
+  --input: #3a474a;
+  --ring: #84a98c;
+
+  /* job order status */
+  --open: #63a8c9;
+  --open-soft: #12242c;
+  --filled: #5fb083;
+  --filled-soft: #122419;
+  --hold: #d0a352;
+  --hold-soft: #251f12;
+  --closed: #d98077;
+  --closed-soft: #2a1b1a;
+  --draft: #98a49f;
+  --draft-soft: #1f2626;
+
+  /* pipeline */
+  --stage-1: #4a5a58;
+  --stage-2: #63776f;
+  --stage-3: #7f9a8c;
+  --stage-4: #a0bda9;
+  --stage-5: #cad2c5;
+  --stage-6: #4fae7c;
+
+  /* analytics */
+  --chart-1: #8fb69c;
+  --chart-2: #63a8c9;
+  --chart-3: #4fae9c;
+  --chart-4: #d5a75a;
+  --chart-5: #b79bc9;
+
+  /* sidebar */
+  --sidebar: #0a0e0f;
+  --sidebar-foreground: #d6dcd9;
+  --sidebar-primary: #84a98c;
+  --sidebar-primary-foreground: #0e1b16;
+  --sidebar-accent: #1b2426;
+  --sidebar-accent-foreground: #f2f5f3;
+  --sidebar-border: #1d2527;
+  --sidebar-ring: #84a98c;
+}
+
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans;
+  }
+
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+}

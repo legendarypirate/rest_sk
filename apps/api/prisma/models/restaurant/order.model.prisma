@@ -1,0 +1,112 @@
+model Order {
+  id       String @id @default(uuid(7)) @db.Uuid
+  publicId String @unique @default(uuid(7)) @map("public_id") @db.Uuid
+
+  restaurantId String     @map("restaurant_id") @db.Uuid
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+
+  orderNumber String       @map("order_number") @db.VarChar(32)
+  channel     OrderChannel
+  serviceType ServiceType  @map("service_type")
+  status      OrderStatus  @default(DRAFT)
+  currency    String       @default("MNT") @db.Char(3)
+
+  employeeId String?   @map("employee_id") @db.Uuid
+  employee   Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  kioskDeviceId String?      @map("kiosk_device_id") @db.Uuid
+  kioskDevice   KioskDevice? @relation(fields: [kioskDeviceId], references: [id], onDelete: SetNull)
+
+  kioskSessionId String?       @map("kiosk_session_id") @db.Uuid
+  kioskSession   KioskSession? @relation(fields: [kioskSessionId], references: [id], onDelete: SetNull)
+
+  placedByUserId String? @map("placed_by_user_id") @db.Uuid
+  placedByUser   User?   @relation("OrderPlacedBy", fields: [placedByUserId], references: [id], onDelete: SetNull)
+
+  subtotal      Decimal @default(0) @db.Decimal(14, 2)
+  discountTotal Decimal @default(0) @map("discount_total") @db.Decimal(14, 2)
+  subsidyTotal  Decimal @default(0) @map("subsidy_total") @db.Decimal(14, 2)
+  grandTotal    Decimal @default(0) @map("grand_total") @db.Decimal(14, 2)
+
+  note        String?   @db.VarChar(500)
+  openedAt    DateTime  @default(now()) @map("opened_at") @db.Timestamptz
+  confirmedAt DateTime? @map("confirmed_at") @db.Timestamptz
+  completedAt DateTime? @map("completed_at") @db.Timestamptz
+  cancelledAt DateTime? @map("cancelled_at") @db.Timestamptz
+
+  metadata   Json @default("{}")
+  rowVersion Int  @default(1) @map("row_version")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  items          OrderItem[]
+  statusHistory  OrderStatusHistory[]
+  payments       PaymentTransaction[]
+  refunds        Refund[]
+  employeeMeal   EmployeeMeal?
+  kitchenOrders  KitchenOrder[]
+
+  @@unique([restaurantId, orderNumber])
+  @@index([status, openedAt])
+  @@index([employeeId, openedAt])
+  @@index([channel, openedAt])
+  @@map("orders")
+  @@schema("restaurant")
+}
+
+model OrderItem {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  orderId String @map("order_id") @db.Uuid
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  menuItemId String?   @map("menu_item_id") @db.Uuid
+  menuItem   MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+
+  lineNumber Int @map("line_number")
+
+  nameSnapshot    String  @map("name_snapshot") @db.VarChar(200)
+  skuSnapshot     String  @map("sku_snapshot") @db.VarChar(64)
+  variantSnapshot String? @map("variant_snapshot") @db.VarChar(200)
+
+  quantity       Decimal @db.Decimal(10, 3)
+  currency       String  @default("MNT") @db.Char(3)
+  unitPrice      Decimal @map("unit_price") @db.Decimal(14, 2)
+  discountAmount Decimal @default(0) @map("discount_amount") @db.Decimal(14, 2)
+  subsidyAmount  Decimal @default(0) @map("subsidy_amount") @db.Decimal(14, 2)
+  lineTotal      Decimal @map("line_total") @db.Decimal(14, 2)
+
+  note     String? @db.VarChar(300)
+  metadata Json    @default("{}")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  kitchenOrderItems KitchenOrderItem[]
+
+  @@unique([orderId, lineNumber])
+  @@index([menuItemId])
+  @@map("order_items")
+  @@schema("restaurant")
+}
+
+model OrderStatusHistory {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  orderId String @map("order_id") @db.Uuid
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  fromStatus OrderStatus? @map("from_status")
+  toStatus   OrderStatus  @map("to_status")
+  reason     String?      @db.VarChar(300)
+
+  changedByUserId String? @map("changed_by_user_id") @db.Uuid
+  changedByUser   User?   @relation("OrderStatusChangedBy", fields: [changedByUserId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([orderId, createdAt])
+  @@map("order_status_history")
+  @@schema("restaurant")
+}

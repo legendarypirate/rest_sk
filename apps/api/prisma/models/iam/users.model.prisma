@@ -1,0 +1,77 @@
+model User {
+  id       String @id @default(uuid(7)) @db.Uuid
+  publicId String @unique @default(uuid(7)) @map("public_id") @db.Uuid
+
+  email           String? @db.VarChar(320)
+  emailNormalized String? @map("email_normalized") @db.VarChar(320)
+  phoneE164       String? @map("phone_e164") @db.VarChar(20)
+  username        String? @unique @db.VarChar(64)
+
+  firstName   String? @map("first_name") @db.VarChar(100)
+  lastName    String? @map("last_name") @db.VarChar(100)
+  displayName String? @map("display_name") @db.VarChar(200)
+  avatarUrl   String? @map("avatar_url") @db.Text
+
+  status UserStatus @default(PENDING)
+
+  emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz
+  phoneVerifiedAt DateTime? @map("phone_verified_at") @db.Timestamptz
+
+  locale   String? @db.VarChar(16)
+  timezone String? @db.VarChar(64)
+
+  lastLoginAt DateTime? @map("last_login_at") @db.Timestamptz
+  lastLoginIp String?   @map("last_login_ip") @db.Inet
+  lastSeenAt  DateTime? @map("last_seen_at") @db.Timestamptz
+
+  isSystemUser   Boolean @default(false) @map("is_system_user")
+  isBot          Boolean @default(false) @map("is_bot")
+  scimExternalId String? @unique @map("scim_external_id") @db.VarChar(255)
+
+  termsAcceptedAt   DateTime? @map("terms_accepted_at") @db.Timestamptz
+  privacyAcceptedAt DateTime? @map("privacy_accepted_at") @db.Timestamptz
+  marketingOptIn    Boolean   @default(false) @map("marketing_opt_in")
+
+  deactivatedAt     DateTime? @map("deactivated_at") @db.Timestamptz
+  deactivatedReason String?   @map("deactivated_reason") @db.VarChar(500)
+
+  metadata   Json @default("{}")
+  rowVersion Int  @default(1) @map("row_version")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  credentials          UserCredential[]
+  sessions             UserSession[]
+  impersonatedSessions UserSession[]        @relation("SessionImpersonator")
+  devices              UserDevice[]
+  identities           UserIdentity[]
+  verifications        UserVerification[]
+  security             UserSecurity?
+  userRoles            UserRole[]
+  grantedUserRoles     UserRole[]           @relation("UserRoleGrantedBy")
+  accessTokens         AccessToken[]
+  refreshTokens        RefreshToken[]
+  passwordResets       PasswordReset[]
+  emailVerifications   EmailVerification[]
+  phoneVerifications   PhoneVerification[]
+  loginAttempts        LoginAttempt[]
+  securityEvents       SecurityEvent[]
+  auditLogsActed       AuditLog[]           @relation("AuditLogActor")
+  auditLogsTargeted    AuditLog[]           @relation("AuditLogTarget")
+
+  employees                    Employee[]
+  ordersPlaced                 Order[]                        @relation("OrderPlacedBy")
+  orderStatusChanges           OrderStatusHistory[]           @relation("OrderStatusChangedBy")
+  refundsCreated               Refund[]                       @relation("RefundCreatedBy")
+  mediaAssetsUploaded          MediaAsset[]                   @relation("MediaUploadedBy")
+
+  @@index([status])
+  @@index([emailNormalized])
+  @@index([phoneE164])
+  @@index([deletedAt])
+  @@index([lastLoginAt])
+  @@map("users")
+  @@schema("iam")
+}

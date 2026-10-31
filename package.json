@@ -1,0 +1,60 @@
+{
+  "name": "restaurant",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "pnpm --filter api build && pnpm --filter desktop build && pnpm --filter admin build",
+    "build:web": "pnpm --filter api build && pnpm --filter admin build",
+    "dev": "pnpm --parallel --stream --filter api --filter desktop --filter admin dev",
+    "dev:web": "pnpm --filter api dev && pnpm --filter admin dev",
+    "dev:api": "pnpm --filter api dev",
+    "dev:desktop": "pnpm --filter desktop dev",
+    "exe": "pnpm --filter desktop exe",
+    "dev:admin": "pnpm --filter admin dev",
+    "start:api": "pnpm --filter api start:prod",
+    "start:desktop": "pnpm --filter desktop start",
+    "start:admin": "pnpm --filter admin start",
+    "pm2:start": "pm2 start ecosystem.config.cjs",
+    "pm2:stop": "pm2 stop ecosystem.config.cjs",
+    "pm2:restart": "pm2 restart ecosystem.config.cjs",
+    "pm2:delete": "pm2 delete ecosystem.config.cjs",
+    "pm2:logs": "pm2 logs",
+    "start:api:debug": "pnpm --filter api start:debug",
+    "ui:add": "pnpm dlx shadcn@latest add -c packages/ui",
+    "format:check": "prettier --check .",
+    "prisma:generate": "pnpm --filter api prisma:generate",
+    "prisma:migrate": "pnpm --filter api prisma:migrate",
+    "prisma:migrate:deploy": "pnpm --filter api prisma:migrate:deploy",
+    "prisma:migrate:reset": "pnpm --filter api prisma:migrate:reset",
+    "prisma:migrate:status": "pnpm --filter api prisma:migrate:status",
+    "prisma:studio": "pnpm --filter api prisma:studio",
+    "prisma:seed": "pnpm --filter api prisma:seed",
+    "prisma:push": "pnpm --filter api prisma:push",
+    "prisma:constraints": "pnpm --filter api prisma:constraints",
+    "prisma:validate": "pnpm --filter api prisma:validate",
+    "prisma:format": "pnpm --filter api prisma:format",
+    "prepare": "husky"
+  },
+  "keywords": [
+    "restaurant"
+  ],
+  "author": "Ikhtamir",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.5.1",
+      "onFail": "download"
+    }
+  },
+  "packageManager": "pnpm@12.5.1",
+  "type": "module",
+  "devDependencies": {
+    "@changesets/cli": "^3.0.3",
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.1"
+  }
+}

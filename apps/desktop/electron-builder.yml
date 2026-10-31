@@ -1,0 +1,26 @@
+appId: mn.khongor.restaurant.kiosk
+productName: Khongor Kiosk
+directories:
+  output: release
+npmRebuild: false
+nodeGypRebuild: false
+files:
+  - electron/dist/**/*
+  - out/**/*
+  - package.json
+  - "!node_modules"
+  - "!node_modules/**"
+asar: true
+extraMetadata:
+  main: electron/dist/main.cjs
+win:
+  target: nsis
+  signAndEditExecutable: false
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  allowElevation: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Khongor Kiosk
+  artifactName: ${productName} Setup.exe

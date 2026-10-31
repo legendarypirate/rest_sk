@@ -1,0 +1,24 @@
+model Permission {
+  id          String          @id @default(uuid(7)) @db.Uuid
+  key         String          @unique @db.VarChar(128)
+  name        String          @db.VarChar(120)
+  description String?         @db.Text
+  resource    String          @db.VarChar(64)
+  action      String          @db.VarChar(64)
+  scope       PermissionScope
+  isDangerous Boolean         @default(false) @map("is_dangerous")
+
+  resourceId String?   @map("resource_id") @db.Uuid
+  catalog    Resource? @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  rolePermissions RolePermission[]
+
+  @@index([resource, action])
+  @@index([resourceId])
+  @@index([scope])
+  @@map("permissions")
+  @@schema("iam")
+}

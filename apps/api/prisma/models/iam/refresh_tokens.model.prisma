@@ -1,0 +1,33 @@
+model RefreshToken {
+  id     String @id @default(uuid(7)) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  sessionId     String?      @map("session_id") @db.Uuid
+  session       UserSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  accessTokenId String?      @map("access_token_id") @db.Uuid
+  accessToken   AccessToken? @relation(fields: [accessTokenId], references: [id], onDelete: SetNull)
+
+  familyId        String      @map("family_id") @db.Uuid
+  tokenHash       String      @unique @map("token_hash")
+  status          TokenStatus @default(ACTIVE)
+  parentId        String?     @map("parent_id") @db.Uuid
+  replacedById    String?     @map("replaced_by_id") @db.Uuid
+  reuseDetectedAt DateTime?   @map("reuse_detected_at") @db.Timestamptz
+
+  ipAddress String?   @map("ip_address") @db.Inet
+  userAgent String?   @map("user_agent") @db.Text
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz
+  rotatedAt DateTime? @map("rotated_at") @db.Timestamptz
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz
+
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([userId, status])
+  @@index([familyId])
+  @@index([sessionId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+  @@schema("iam")
+}

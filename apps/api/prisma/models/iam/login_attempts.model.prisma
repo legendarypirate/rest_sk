@@ -1,0 +1,32 @@
+model LoginAttempt {
+  id     String  @id @default(uuid(7)) @db.Uuid
+  userId String? @map("user_id") @db.Uuid
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  identifier     String           @db.VarChar(320)
+  identifierType String           @map("identifier_type") @db.VarChar(16)
+  outcome        LoginOutcome
+  failureReason  String?          @map("failure_reason") @db.VarChar(64)
+  mfaMethod      MfaMethod?       @map("mfa_method")
+  provider       IdentityProvider @default(LOCAL)
+
+  ipAddress       String? @map("ip_address") @db.Inet
+  userAgent       String? @map("user_agent") @db.Text
+  fingerprint     String? @db.VarChar(128)
+  geoCountry      String? @map("geo_country") @db.Char(2)
+  geoCity         String? @map("geo_city") @db.VarChar(100)
+  asn             String? @db.VarChar(32)
+  isTrustedDevice Boolean @default(false) @map("is_trusted_device")
+
+  requestId     String? @map("request_id") @db.VarChar(64)
+  correlationId String? @map("correlation_id") @db.VarChar(64)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([identifier, createdAt])
+  @@index([ipAddress, createdAt])
+  @@index([userId, createdAt])
+  @@index([outcome, createdAt])
+  @@map("login_attempts")
+  @@schema("iam")
+}

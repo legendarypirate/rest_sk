@@ -1,0 +1,192 @@
+enum RecordStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+
+  @@schema("restaurant")
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  UNAVAILABLE
+  OUT_OF_STOCK
+
+  @@schema("restaurant")
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+
+  @@schema("restaurant")
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+  OTHER
+
+  @@schema("restaurant")
+}
+
+enum SubsidyMode {
+  FIXED_AMOUNT
+  PERCENT
+
+  @@schema("restaurant")
+}
+
+enum EmployeeMealStatus {
+  CONSUMED
+  CANCELLED
+  REFUNDED
+
+  @@schema("restaurant")
+}
+
+enum FoodType {
+  E_FOOD
+  ORDERED
+
+  @@schema("restaurant")
+}
+
+enum OrderChannel {
+  KIOSK
+  POS
+  ADMIN
+
+  @@schema("restaurant")
+}
+
+enum ServiceType {
+  DINE_IN
+  TAKEAWAY
+
+  @@schema("restaurant")
+}
+
+enum OrderStatus {
+  DRAFT
+  CREATED
+  CONFIRMED
+  KITCHEN_RECEIVED
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+
+  @@schema("restaurant")
+}
+
+enum PayerRole {
+  CUSTOMER
+  EMPLOYEE
+  COMPANY
+
+  @@schema("restaurant")
+}
+
+enum PaymentMethodKind {
+  CASH
+  CARD
+  QPAY
+  EMPLOYEE_BALANCE
+  COMPANY_SUBSIDY
+
+  @@schema("restaurant")
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  CANCELLED
+  PARTIALLY_REFUNDED
+  REFUNDED
+
+  @@schema("restaurant")
+}
+
+enum PaymentEventStatus {
+  RECEIVED
+  PROCESSED
+  IGNORED
+  FAILED
+
+  @@schema("restaurant")
+}
+
+enum RefundStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+
+  @@schema("restaurant")
+}
+
+enum KioskDeviceStatus {
+  ONLINE
+  OFFLINE
+  MAINTENANCE
+  DISABLED
+
+  @@schema("restaurant")
+}
+
+enum KioskSessionStatus {
+  OPEN
+  CLOSED
+  EXPIRED
+  ABANDONED
+
+  @@schema("restaurant")
+}
+
+enum DeviceEventType {
+  ONLINE
+  OFFLINE
+  HEARTBEAT
+  PRINTER_ERROR
+  PAYMENT_TERMINAL_ERROR
+  APPLICATION_CRASH
+  UPDATE
+
+  @@schema("restaurant")
+}
+
+enum KitchenStationType {
+  GRILL
+  FRY
+  COLD
+  DRINKS
+  EXPO
+  OTHER
+
+  @@schema("restaurant")
+}
+
+enum KitchenOrderStatus {
+  QUEUED
+  RECEIVED
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+
+  @@schema("restaurant")
+}
+
+enum MediaUploadStatus {
+  PENDING
+  STORED
+  FAILED
+
+  @@schema("restaurant")
+}

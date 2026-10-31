@@ -1,0 +1,185 @@
+enum UserStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  LOCKED
+  DEACTIVATED
+  DELETED
+
+  @@schema("iam")
+}
+
+enum CredentialType {
+  PASSWORD
+  PASSKEY
+  TOTP
+  BACKUP_CODE
+
+  @@schema("iam")
+}
+
+enum IdentityProvider {
+  LOCAL
+  GOOGLE
+  MICROSOFT
+  LINKEDIN
+  APPLE
+  OKTA
+  AUTH0
+  SAML
+  OIDC
+
+  @@schema("iam")
+}
+
+enum SessionStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+  FORCED_LOGOUT
+
+  @@schema("iam")
+}
+
+enum DeviceTrust {
+  UNKNOWN
+  PENDING
+  TRUSTED
+  BLOCKED
+  REVOKED
+
+  @@schema("iam")
+}
+
+enum MfaMethod {
+  NONE
+  TOTP
+  SMS
+  EMAIL
+  WEBAUTHN
+  BACKUP_CODE
+
+  @@schema("iam")
+}
+
+enum RoleScope {
+  PLATFORM
+  ORGANIZATION
+
+  @@schema("iam")
+}
+
+enum PermissionScope {
+  PLATFORM
+  ORGANIZATION
+
+  @@schema("iam")
+}
+
+enum TokenType {
+  ACCESS
+  PERSONAL
+  SERVICE
+  OAUTH
+  SCIM
+  IMPERSONATION
+
+  @@schema("iam")
+}
+
+enum TokenStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+  ROTATED
+  REUSE_DETECTED
+
+  @@schema("iam")
+}
+
+enum VerificationChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  TOTP
+  WEBAUTHN
+  MAGIC_LINK
+
+  @@schema("iam")
+}
+
+enum VerificationPurpose {
+  SIGNUP
+  LOGIN
+  MFA
+  STEP_UP
+  PASSWORD_RESET
+  EMAIL_CHANGE
+  PHONE_CHANGE
+  INVITE
+  SENSITIVE_ACTION
+
+  @@schema("iam")
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  EXPIRED
+  FAILED
+  CONSUMED
+  CANCELLED
+
+  @@schema("iam")
+}
+
+enum LoginOutcome {
+  SUCCESS
+  FAILURE
+  LOCKED
+  BLOCKED
+  MFA_REQUIRED
+  MFA_FAILED
+  SSO_REQUIRED
+  PASSWORD_EXPIRED
+
+  @@schema("iam")
+}
+
+enum SecuritySeverity {
+  INFO
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+
+  @@schema("iam")
+}
+
+enum ActorType {
+  USER
+  SYSTEM
+  API_KEY
+  SERVICE_ACCOUNT
+  IMPERSONATOR
+  ANONYMOUS
+
+  @@schema("iam")
+}
+
+enum AuditAction {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  EXPORT
+  INVITE
+  REVOKE
+  IMPERSONATE
+  PERMISSION_GRANT
+  PERMISSION_REVOKE
+
+  @@schema("iam")
+}

@@ -1,0 +1,31 @@
+model UserDevice {
+  id     String @id @default(uuid(7)) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fingerprint String      @db.VarChar(128)
+  name        String?     @db.VarChar(120)
+  platform    String?     @db.VarChar(64)
+  os          String?     @db.VarChar(64)
+  browser     String?     @db.VarChar(64)
+  userAgent   String?     @map("user_agent") @db.Text
+  trust       DeviceTrust @default(UNKNOWN)
+
+  lastIp        String?   @map("last_ip") @db.Inet
+  lastSeenAt    DateTime? @map("last_seen_at") @db.Timestamptz
+  trustedAt     DateTime? @map("trusted_at") @db.Timestamptz
+  blockedAt     DateTime? @map("blocked_at") @db.Timestamptz
+  pushTokenHash String?   @map("push_token_hash")
+
+  metadata  Json      @default("{}")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  sessions UserSession[]
+
+  @@unique([userId, fingerprint])
+  @@index([userId, trust])
+  @@map("user_devices")
+  @@schema("iam")
+}

@@ -1,0 +1,27 @@
+model SecurityEvent {
+  id     String  @id @default(uuid(7)) @db.Uuid
+  userId String? @map("user_id") @db.Uuid
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  eventType String           @map("event_type") @db.VarChar(64)
+  severity  SecuritySeverity @default(INFO)
+  title     String           @db.VarChar(200)
+  message   String?          @db.Text
+  payload   Json             @default("{}")
+
+  ipAddress     String? @map("ip_address") @db.Inet
+  userAgent     String? @map("user_agent") @db.Text
+  requestId     String? @map("request_id") @db.VarChar(64)
+  correlationId String? @map("correlation_id") @db.VarChar(64)
+
+  resolvedAt     DateTime? @map("resolved_at") @db.Timestamptz
+  resolvedById   String?   @map("resolved_by_id") @db.Uuid
+  resolutionNote String?   @map("resolution_note") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([userId, createdAt])
+  @@index([eventType, severity, createdAt])
+  @@map("security_events")
+  @@schema("iam")
+}

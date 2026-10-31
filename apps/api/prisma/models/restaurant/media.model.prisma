@@ -1,0 +1,82 @@
+model MediaAsset {
+  id       String @id @default(uuid(7)) @db.Uuid
+  publicId String @unique @default(uuid(7)) @map("public_id") @db.Uuid
+
+  restaurantId String     @map("restaurant_id") @db.Uuid
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+
+  uploadedByUserId String? @map("uploaded_by_user_id") @db.Uuid
+  uploadedByUser   User?   @relation("MediaUploadedBy", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+
+  originalFilename    String            @map("original_filename") @db.VarChar(255)
+  mimeType            String            @map("mime_type") @db.VarChar(127)
+  byteSize            Int               @map("byte_size")
+  storageKey          String            @unique @map("storage_key") @db.VarChar(512)
+  storageUrl          String            @map("storage_url") @db.Text
+  thumbnailStorageKey String?           @map("thumbnail_storage_key") @db.VarChar(512)
+  thumbnailUrl        String?           @map("thumbnail_url") @db.Text
+  width               Int?
+  height              Int?
+  altText             String?           @map("alt_text") @db.VarChar(300)
+  checksum            String?           @db.VarChar(128)
+  status              MediaUploadStatus @default(STORED)
+
+  metadata   Json @default("{}")
+  rowVersion Int  @default(1) @map("row_version")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  menuItemImages     MenuItemImage[]
+  menuCategoryImages MenuCategoryImage[]
+
+  @@index([restaurantId, status, createdAt])
+  @@index([deletedAt])
+  @@map("media_assets")
+  @@schema("restaurant")
+}
+
+model MenuItemImage {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  menuItemId String   @map("menu_item_id") @db.Uuid
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  mediaAssetId String     @map("media_asset_id") @db.Uuid
+  mediaAsset   MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  sortOrder Int     @default(0) @map("sort_order")
+  isPrimary Boolean @default(false) @map("is_primary")
+  altText   String? @map("alt_text") @db.VarChar(300)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([menuItemId, mediaAssetId])
+  @@index([menuItemId, sortOrder])
+  @@map("menu_item_images")
+  @@schema("restaurant")
+}
+
+model MenuCategoryImage {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  menuCategoryId String       @map("menu_category_id") @db.Uuid
+  menuCategory   MenuCategory @relation(fields: [menuCategoryId], references: [id], onDelete: Cascade)
+
+  mediaAssetId String     @map("media_asset_id") @db.Uuid
+  mediaAsset   MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  sortOrder Int     @default(0) @map("sort_order")
+  isPrimary Boolean @default(false) @map("is_primary")
+  altText   String? @map("alt_text") @db.VarChar(300)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([menuCategoryId, mediaAssetId])
+  @@index([menuCategoryId, sortOrder])
+  @@map("menu_category_images")
+  @@schema("restaurant")
+}

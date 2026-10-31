@@ -1,0 +1,27 @@
+model PhoneVerification {
+  id     String  @id @default(uuid(7)) @db.Uuid
+  userId String? @map("user_id") @db.Uuid
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  phoneE164 String              @map("phone_e164") @db.VarChar(20)
+  purpose   VerificationPurpose @default(SIGNUP)
+  status    VerificationStatus  @default(PENDING)
+  codeHash  String              @map("code_hash")
+  channel   VerificationChannel @default(SMS)
+
+  attempts    Int @default(0)
+  maxAttempts Int @default(5) @map("max_attempts")
+
+  ipAddress  String?   @map("ip_address") @db.Inet
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz
+  verifiedAt DateTime? @map("verified_at") @db.Timestamptz
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([phoneE164, purpose, status])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("phone_verifications")
+  @@schema("iam")
+}

@@ -1,0 +1,22 @@
+enum EmployeeMealKind {
+  LUNCH
+  DINNER
+
+  @@schema("employee_meal")
+}
+
+enum EmployeeMealDayStatus {
+  SCHEDULED
+  CLOSED
+  CANCELLED
+
+  @@schema("employee_meal")
+}
+
+enum EmployeeMealOrderStatus {
+  ORDERED
+  CANCELLED
+  CONSUMED
+
+  @@schema("employee_meal")
+}

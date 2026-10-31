@@ -1,0 +1,37 @@
+model AuditLog {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  actorType    ActorType
+  actorUserId  String?   @map("actor_user_id") @db.Uuid
+  actorUser    User?     @relation("AuditLogActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  actorTokenId String?   @map("actor_token_id") @db.Uuid
+
+  impersonatorUserId String? @map("impersonator_user_id") @db.Uuid
+
+  targetUserId String? @map("target_user_id") @db.Uuid
+  targetUser   User?   @relation("AuditLogTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  action       AuditAction
+  resourceType String      @map("resource_type") @db.VarChar(64)
+  resourceId   String?     @map("resource_id") @db.VarChar(64)
+
+  before   Json?
+  after    Json?
+  metadata Json  @default("{}")
+
+  ipAddress     String? @map("ip_address") @db.Inet
+  userAgent     String? @map("user_agent") @db.Text
+  requestId     String? @map("request_id") @db.VarChar(64)
+  correlationId String? @map("correlation_id") @db.VarChar(64)
+
+  previousHash String? @map("previous_hash") @db.VarChar(64)
+  recordHash   String  @map("record_hash") @db.VarChar(64)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([actorUserId, createdAt])
+  @@index([resourceType, resourceId])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+  @@schema("iam")
+}

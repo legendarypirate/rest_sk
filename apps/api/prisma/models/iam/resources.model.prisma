@@ -1,0 +1,33 @@
+model Resource {
+  id             String          @id @default(uuid(7)) @db.Uuid
+  slug           String          @unique @db.VarChar(64)
+  name           String          @db.VarChar(100)
+  description    String?         @db.Text
+  scope          PermissionScope @default(PLATFORM)
+  path           String?         @db.VarChar(255)
+  icon           String?         @db.VarChar(64)
+  groupKey       String?         @map("group_key") @db.VarChar(64)
+  groupLabel     String?         @map("group_label") @db.VarChar(100)
+  groupSortOrder Int             @default(0) @map("group_sort_order")
+  sortOrder      Int             @default(0) @map("sort_order")
+  isSystem       Boolean         @default(false) @map("is_system")
+  isMenu         Boolean         @default(true) @map("is_menu")
+  menuExact      Boolean         @default(false) @map("menu_exact")
+  menuAnyOf      String[]        @default([]) @map("menu_any_of")
+
+  parentId String?    @map("parent_id") @db.Uuid
+  parent   Resource?  @relation("ResourceTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Resource[] @relation("ResourceTree")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  permissions Permission[]
+
+  @@index([groupKey, sortOrder])
+  @@index([groupSortOrder, groupKey, sortOrder])
+  @@index([isMenu, deletedAt])
+  @@map("resources")
+  @@schema("iam")
+}

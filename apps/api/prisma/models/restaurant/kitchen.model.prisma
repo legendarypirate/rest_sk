@@ -1,0 +1,137 @@
+model Kitchen {
+  id       String @id @default(uuid(7)) @db.Uuid
+  publicId String @unique @default(uuid(7)) @map("public_id") @db.Uuid
+
+  restaurantId String     @map("restaurant_id") @db.Uuid
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+
+  code     String @db.VarChar(32)
+  name     String @db.VarChar(200)
+  isActive Boolean @default(true) @map("is_active")
+
+  metadata   Json @default("{}")
+  rowVersion Int  @default(1) @map("row_version")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  stations KitchenStation[]
+  orders   KitchenOrder[]
+
+  @@unique([restaurantId, code])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@map("kitchens")
+  @@schema("restaurant")
+}
+
+model KitchenStation {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  kitchenId String  @map("kitchen_id") @db.Uuid
+  kitchen   Kitchen @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
+
+  code        String             @db.VarChar(32)
+  name        String             @db.VarChar(200)
+  stationType KitchenStationType @map("station_type")
+  sortOrder   Int                @default(0) @map("sort_order")
+  isActive    Boolean            @default(true) @map("is_active")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  orderItems KitchenOrderItem[]
+  tickets    KitchenTicket[]
+
+  @@unique([kitchenId, code])
+  @@index([kitchenId, sortOrder])
+  @@map("kitchen_stations")
+  @@schema("restaurant")
+}
+
+model KitchenOrder {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  kitchenId String  @map("kitchen_id") @db.Uuid
+  kitchen   Kitchen @relation(fields: [kitchenId], references: [id], onDelete: Restrict)
+
+  orderId String @map("order_id") @db.Uuid
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  status   KitchenOrderStatus @default(QUEUED)
+  priority Int                @default(0)
+
+  receivedAt  DateTime? @map("received_at") @db.Timestamptz
+  startedAt   DateTime? @map("started_at") @db.Timestamptz
+  readyAt     DateTime? @map("ready_at") @db.Timestamptz
+  completedAt DateTime? @map("completed_at") @db.Timestamptz
+  cancelledAt DateTime? @map("cancelled_at") @db.Timestamptz
+
+  metadata   Json @default("{}")
+  rowVersion Int  @default(1) @map("row_version")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  items   KitchenOrderItem[]
+  tickets KitchenTicket[]
+
+  @@unique([kitchenId, orderId])
+  @@index([kitchenId, status, priority])
+  @@map("kitchen_orders")
+  @@schema("restaurant")
+}
+
+model KitchenOrderItem {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  kitchenOrderId String       @map("kitchen_order_id") @db.Uuid
+  kitchenOrder   KitchenOrder @relation(fields: [kitchenOrderId], references: [id], onDelete: Cascade)
+
+  orderItemId String    @map("order_item_id") @db.Uuid
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+
+  stationId String         @map("station_id") @db.Uuid
+  station   KitchenStation @relation(fields: [stationId], references: [id], onDelete: Restrict)
+
+  status   KitchenOrderStatus @default(QUEUED)
+  quantity Decimal            @db.Decimal(10, 3)
+
+  startedAt DateTime? @map("started_at") @db.Timestamptz
+  readyAt   DateTime? @map("ready_at") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([kitchenOrderId, orderItemId, stationId])
+  @@index([stationId, status])
+  @@map("kitchen_order_items")
+  @@schema("restaurant")
+}
+
+model KitchenTicket {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  kitchenOrderId String       @map("kitchen_order_id") @db.Uuid
+  kitchenOrder   KitchenOrder @relation(fields: [kitchenOrderId], references: [id], onDelete: Cascade)
+
+  stationId String         @map("station_id") @db.Uuid
+  station   KitchenStation @relation(fields: [stationId], references: [id], onDelete: Restrict)
+
+  ticketNumber String             @map("ticket_number") @db.VarChar(32)
+  status       KitchenOrderStatus @default(QUEUED)
+  priority     Int                @default(0)
+  printedAt    DateTime?          @map("printed_at") @db.Timestamptz
+
+  metadata Json @default("{}")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([kitchenOrderId, stationId, ticketNumber])
+  @@index([stationId, status, priority])
+  @@map("kitchen_tickets")
+  @@schema("restaurant")
+}

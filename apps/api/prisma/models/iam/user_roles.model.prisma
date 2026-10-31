@@ -1,0 +1,17 @@
+model UserRole {
+  id     String @id @default(uuid(7)) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  roleId String @map("role_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  grantedById String?   @map("granted_by_id") @db.Uuid
+  grantedBy   User?     @relation("UserRoleGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
+  grantedAt   DateTime  @default(now()) @map("granted_at") @db.Timestamptz
+  expiresAt   DateTime? @map("expires_at") @db.Timestamptz
+
+  @@unique([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+  @@schema("iam")
+}

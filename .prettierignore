@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+out
+.next
+coverage
+generated
+pnpm-lock.yaml
+apps/api/generated
+apps/api/src/generated

@@ -1,0 +1,126 @@
+model EmployeeMealType {
+  id       String @id @default(uuid(7)) @db.Uuid
+  publicId String @unique @default(uuid(7)) @map("public_id") @db.Uuid
+
+  restaurantId String     @map("restaurant_id") @db.Uuid
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+
+  kind      EmployeeMealKind
+  code      String           @db.VarChar(32)
+  name      String           @db.VarChar(100)
+  sortOrder Int              @default(0) @map("sort_order")
+  isEnabled Boolean          @default(true) @map("is_enabled")
+
+  metadata   Json @default("{}")
+  rowVersion Int  @default(1) @map("row_version")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  schedules EmployeeOrderSchedule[]
+  days      EmployeeMealDay[]
+
+  @@unique([restaurantId, kind])
+  @@unique([restaurantId, code])
+  @@index([isEnabled, sortOrder])
+  @@index([deletedAt])
+  @@map("employee_meal_type")
+  @@schema("employee_meal")
+}
+
+model EmployeeOrderSchedule {
+  id       String @id @default(uuid(7)) @db.Uuid
+  publicId String @unique @default(uuid(7)) @map("public_id") @db.Uuid
+
+  restaurantId String     @map("restaurant_id") @db.Uuid
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+
+  mealTypeId String           @map("meal_type_id") @db.Uuid
+  mealType   EmployeeMealType @relation(fields: [mealTypeId], references: [id], onDelete: Restrict)
+
+  name     String @db.VarChar(120)
+  timezone String @default("Asia/Ulaanbaatar") @db.VarChar(64)
+  weekdays Int[]  @default([1, 2, 3, 4, 5])
+
+  opensAt DateTime @map("opens_at") @db.Time(0)
+  closesAt DateTime @map("closes_at") @db.Time(0)
+
+  validFrom DateTime  @map("valid_from") @db.Date
+  validTo   DateTime? @map("valid_to") @db.Date
+  isEnabled Boolean   @default(true) @map("is_enabled")
+
+  metadata   Json @default("{}")
+  rowVersion Int  @default(1) @map("row_version")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  @@index([mealTypeId, isEnabled, validFrom, validTo])
+  @@index([deletedAt])
+  @@map("employee_order_schedule")
+  @@schema("employee_meal")
+}
+
+model EmployeeMealDay {
+  id       String @id @default(uuid(7)) @db.Uuid
+  publicId String @unique @default(uuid(7)) @map("public_id") @db.Uuid
+
+  restaurantId String     @map("restaurant_id") @db.Uuid
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+
+  mealTypeId String           @map("meal_type_id") @db.Uuid
+  mealType   EmployeeMealType @relation(fields: [mealTypeId], references: [id], onDelete: Restrict)
+
+  serviceDate DateTime              @map("service_date") @db.Date
+  name        String?               @db.VarChar(200)
+  status      EmployeeMealDayStatus @default(SCHEDULED)
+
+  menuItemId String?   @map("menu_item_id") @db.Uuid
+  menuItem   MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+
+  metadata   Json @default("{}")
+  rowVersion Int  @default(1) @map("row_version")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  orders EmployeeMealOrder[]
+
+  @@unique([restaurantId, mealTypeId, serviceDate])
+  @@index([serviceDate, status])
+  @@index([deletedAt])
+  @@map("employee_meals")
+  @@schema("employee_meal")
+}
+
+model EmployeeMealOrder {
+  id       String @id @default(uuid(7)) @db.Uuid
+  publicId String @unique @default(uuid(7)) @map("public_id") @db.Uuid
+
+  mealDayId String          @map("meal_day_id") @db.Uuid
+  mealDay   EmployeeMealDay @relation(fields: [mealDayId], references: [id], onDelete: Restrict)
+
+  employeeCode String    @map("employee_code") @db.VarChar(32)
+  employeeId   String?   @map("employee_id") @db.Uuid
+  employee     Employee? @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  status     EmployeeMealOrderStatus @default(ORDERED)
+  orderedAt  DateTime                @default(now()) @map("ordered_at") @db.Timestamptz
+  cancelledAt DateTime?              @map("cancelled_at") @db.Timestamptz
+  consumedAt DateTime?               @map("consumed_at") @db.Timestamptz
+
+  metadata   Json @default("{}")
+  rowVersion Int  @default(1) @map("row_version")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([mealDayId, employeeCode])
+  @@index([employeeId, orderedAt])
+  @@index([status, orderedAt])
+  @@map("employee_meal_order")
+  @@schema("employee_meal")
+}

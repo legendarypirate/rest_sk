@@ -1,0 +1,41 @@
+model UserSecurity {
+  id     String @id @default(uuid(7)) @db.Uuid
+  userId String @unique @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  mfaEnabled          Boolean   @default(false) @map("mfa_enabled")
+  mfaEnforced         Boolean   @default(false) @map("mfa_enforced")
+  mfaPrimaryMethod    MfaMethod @default(NONE) @map("mfa_primary_method")
+  totpSecretEncrypted String?   @map("totp_secret_encrypted") @db.Text
+  totpVerifiedAt      DateTime? @map("totp_verified_at") @db.Timestamptz
+  backupCodesHash     String[]  @default([]) @map("backup_codes_hash")
+  recoveryEmail       String?   @map("recovery_email") @db.VarChar(320)
+  recoveryPhone       String?   @map("recovery_phone") @db.VarChar(20)
+
+  failedLoginCount Int       @default(0) @map("failed_login_count")
+  lockoutCount     Int       @default(0) @map("lockout_count")
+  lockedAt         DateTime? @map("locked_at") @db.Timestamptz
+  lockedUntil      DateTime? @map("locked_until") @db.Timestamptz
+  lockReason       String?   @map("lock_reason") @db.VarChar(255)
+
+  riskScore     Int       @default(0) @map("risk_score")
+  riskUpdatedAt DateTime? @map("risk_updated_at") @db.Timestamptz
+
+  stepUpRequiredUntil DateTime? @map("step_up_required_until") @db.Timestamptz
+  passwordlessEnabled Boolean   @default(false) @map("passwordless_enabled")
+
+  lastPasswordChangeAt DateTime? @map("last_password_change_at") @db.Timestamptz
+  lastMfaChangeAt      DateTime? @map("last_mfa_change_at") @db.Timestamptz
+  lastLockoutAt        DateTime? @map("last_lockout_at") @db.Timestamptz
+
+  ipAllowlist String[] @default([]) @map("ip_allowlist")
+
+  metadata   Json @default("{}")
+  rowVersion Int  @default(1) @map("row_version")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("user_security")
+  @@schema("iam")
+}

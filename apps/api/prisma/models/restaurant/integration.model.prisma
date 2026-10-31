@@ -1,0 +1,49 @@
+model Integration {
+  id       String @id @default(uuid(7)) @db.Uuid
+  publicId String @unique @default(uuid(7)) @map("public_id") @db.Uuid
+
+  restaurantId String     @map("restaurant_id") @db.Uuid
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+
+  name       String  @db.VarChar(120)
+  baseUrl    String  @map("base_url") @db.VarChar(300)
+  clientId   String  @map("client_id") @db.VarChar(200)
+  secretCipher String @map("secret_cipher") @db.Text
+  isEnabled  Boolean @default(true) @map("is_enabled")
+  lastSyncedAt DateTime? @map("last_synced_at") @db.Timestamptz
+
+  metadata   Json @default("{}")
+  rowVersion Int  @default(1) @map("row_version")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  apis IntegrationApi[]
+
+  @@unique([restaurantId, clientId])
+  @@index([isEnabled])
+  @@index([deletedAt])
+  @@map("integrations")
+  @@schema("restaurant")
+}
+
+model IntegrationApi {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  integrationId String      @map("integration_id") @db.Uuid
+  integration   Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  scope    String  @db.VarChar(64)
+  method   String  @db.VarChar(8)
+  path     String  @db.VarChar(200)
+  isEnabled Boolean @default(true) @map("is_enabled")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([integrationId, scope, path])
+  @@index([integrationId, isEnabled])
+  @@map("integration_apis")
+  @@schema("restaurant")
+}

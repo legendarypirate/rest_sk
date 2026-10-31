@@ -1,0 +1,13 @@
+model RolePermission {
+  id           String     @id @default(uuid(7)) @db.Uuid
+  roleId       String     @map("role_id") @db.Uuid
+  permissionId String     @map("permission_id") @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+  @@schema("iam")
+}

@@ -1,0 +1,81 @@
+model KioskDevice {
+  id       String @id @default(uuid(7)) @db.Uuid
+  publicId String @unique @default(uuid(7)) @map("public_id") @db.Uuid
+
+  restaurantId String     @map("restaurant_id") @db.Uuid
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+
+  code         String            @db.VarChar(64)
+  name         String            @db.VarChar(200)
+  status       KioskDeviceStatus @default(OFFLINE)
+  appVersion   String?           @map("app_version") @db.VarChar(32)
+  lastSeenAt   DateTime?         @map("last_seen_at") @db.Timestamptz
+  ipAddress    String?           @map("ip_address") @db.Inet
+
+  metadata   Json @default("{}")
+  rowVersion Int  @default(1) @map("row_version")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  sessions KioskSession[]
+  events   DeviceEvent[]
+  orders   Order[]
+
+  @@unique([restaurantId, code])
+  @@index([status, lastSeenAt])
+  @@index([deletedAt])
+  @@map("kiosk_devices")
+  @@schema("restaurant")
+}
+
+model KioskSession {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  deviceId String      @map("device_id") @db.Uuid
+  device   KioskDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  employeeId String?   @map("employee_id") @db.Uuid
+  employee   Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  status    KioskSessionStatus @default(OPEN)
+  startedAt DateTime           @default(now()) @map("started_at") @db.Timestamptz
+  endedAt   DateTime?          @map("ended_at") @db.Timestamptz
+
+  metadata Json @default("{}")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  events DeviceEvent[]
+  orders Order[]
+
+  @@index([deviceId, startedAt])
+  @@index([employeeId, startedAt])
+  @@index([status])
+  @@map("kiosk_sessions")
+  @@schema("restaurant")
+}
+
+model DeviceEvent {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  deviceId String      @map("device_id") @db.Uuid
+  device   KioskDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  sessionId String?       @map("session_id") @db.Uuid
+  session   KioskSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  type       DeviceEventType
+  message    String?         @db.VarChar(500)
+  occurredAt DateTime        @map("occurred_at") @db.Timestamptz
+  metadata   Json            @default("{}")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([deviceId, occurredAt])
+  @@index([type, occurredAt])
+  @@map("device_events")
+  @@schema("restaurant")
+}

@@ -1,0 +1,37 @@
+model UserSession {
+  id     String @id @default(uuid(7)) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  deviceId String?     @map("device_id") @db.Uuid
+  device   UserDevice? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  sessionTokenHash String        @unique @map("session_token_hash")
+  status           SessionStatus @default(ACTIVE)
+
+  ipAddress   String? @map("ip_address") @db.Inet
+  userAgent   String? @map("user_agent") @db.Text
+  fingerprint String? @db.VarChar(128)
+  geoCountry  String? @map("geo_country") @db.Char(2)
+  geoCity     String? @map("geo_city") @db.VarChar(100)
+
+  impersonatedById String? @map("impersonated_by_id") @db.Uuid
+  impersonator     User?   @relation("SessionImpersonator", fields: [impersonatedById], references: [id], onDelete: SetNull)
+
+  lastSeenAt   DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz
+  revokeReason String?   @map("revoke_reason") @db.VarChar(255)
+
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  accessTokens  AccessToken[]
+  refreshTokens RefreshToken[]
+
+  @@index([userId, status])
+  @@index([expiresAt])
+  @@index([deviceId])
+  @@map("user_sessions")
+  @@schema("iam")
+}

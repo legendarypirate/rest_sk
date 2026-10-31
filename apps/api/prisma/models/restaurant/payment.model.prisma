@@ -1,0 +1,93 @@
+model PaymentTransaction {
+  id       String @id @default(uuid(7)) @db.Uuid
+  publicId String @unique @default(uuid(7)) @map("public_id") @db.Uuid
+
+  orderId String @map("order_id") @db.Uuid
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  method    PaymentMethodKind
+  payerRole PayerRole         @map("payer_role")
+  status    PaymentStatus     @default(PENDING)
+  currency  String            @default("MNT") @db.Char(3)
+  amount    Decimal           @db.Decimal(14, 2)
+
+  idempotencyKey        String  @unique @map("idempotency_key") @db.VarChar(128)
+  providerTransactionId String? @map("provider_transaction_id") @db.VarChar(128)
+  failureCode           String? @map("failure_code") @db.VarChar(64)
+  failureMessage        String? @map("failure_message") @db.VarChar(300)
+
+  authorizedAt DateTime? @map("authorized_at") @db.Timestamptz
+  capturedAt   DateTime? @map("captured_at") @db.Timestamptz
+  failedAt     DateTime? @map("failed_at") @db.Timestamptz
+  cancelledAt  DateTime? @map("cancelled_at") @db.Timestamptz
+
+  metadata   Json @default("{}")
+  rowVersion Int  @default(1) @map("row_version")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  events  PaymentEvent[]
+  refunds Refund[]
+
+  @@index([orderId, status])
+  @@index([method, status])
+  @@index([status, createdAt])
+  @@index([providerTransactionId])
+  @@map("payment_transactions")
+  @@schema("restaurant")
+}
+
+model PaymentEvent {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  transactionId String             @map("transaction_id") @db.Uuid
+  transaction   PaymentTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  source          String             @default("QPAY") @db.VarChar(32)
+  providerEventId String             @map("provider_event_id") @db.VarChar(128)
+  eventType       String             @map("event_type") @db.VarChar(64)
+  status          PaymentEventStatus @default(RECEIVED)
+  payload         Json               @default("{}")
+  processedAt     DateTime?          @map("processed_at") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([source, providerEventId])
+  @@index([transactionId, createdAt])
+  @@map("payment_events")
+  @@schema("restaurant")
+}
+
+model Refund {
+  id       String @id @default(uuid(7)) @db.Uuid
+  publicId String @unique @default(uuid(7)) @map("public_id") @db.Uuid
+
+  orderId String @map("order_id") @db.Uuid
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  transactionId String             @map("transaction_id") @db.Uuid
+  transaction   PaymentTransaction @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+
+  createdByUserId String? @map("created_by_user_id") @db.Uuid
+  createdByUser   User?   @relation("RefundCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  status           RefundStatus @default(PENDING)
+  currency         String       @default("MNT") @db.Char(3)
+  amount           Decimal      @db.Decimal(14, 2)
+  reason           String?      @db.VarChar(300)
+  idempotencyKey   String       @unique @map("idempotency_key") @db.VarChar(128)
+  providerRefundId String?      @map("provider_refund_id") @db.VarChar(128)
+  refundedAt       DateTime?    @map("refunded_at") @db.Timestamptz
+
+  metadata   Json @default("{}")
+  rowVersion Int  @default(1) @map("row_version")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([orderId])
+  @@index([transactionId, status])
+  @@map("refunds")
+  @@schema("restaurant")
+}

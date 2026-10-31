@@ -1,0 +1,22 @@
+import type { MenuCategoryImageItem } from '@packages/types';
+import { z } from 'zod';
+
+export const menuCategoryImageSchema = z.object({
+  menuCategoryId: z.string().min(1, 'Ангилал сонгоно уу'),
+  mediaAssetId: z.string().min(1, 'Зураг сонгоно уу'),
+  sortOrder: z.number().int().min(0),
+  isPrimary: z.boolean(),
+  altText: z.string().trim().max(300),
+});
+
+export type MenuCategoryImageFormData = z.infer<typeof menuCategoryImageSchema>;
+
+export function getMenuCategoryImageDefaults(item?: MenuCategoryImageItem): MenuCategoryImageFormData {
+  return {
+    menuCategoryId: item?.menuCategoryId ?? '',
+    mediaAssetId: item?.mediaAssetId ?? '',
+    sortOrder: item?.sortOrder ?? 0,
+    isPrimary: item?.isPrimary ?? false,
+    altText: item?.altText ?? '',
+  };
+}

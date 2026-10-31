@@ -1,0 +1,71 @@
+model Restaurant {
+  id       String @id @default(uuid(7)) @db.Uuid
+  publicId String @unique @default(uuid(7)) @map("public_id") @db.Uuid
+
+  code      String @unique @db.VarChar(32)
+  name      String @db.VarChar(200)
+  legalName String @map("legal_name") @db.VarChar(200)
+  taxId     String? @map("tax_id") @db.VarChar(32)
+
+  phone String? @db.VarChar(32)
+  email String? @db.VarChar(320)
+
+  country    String  @default("MN") @db.Char(2)
+  city       String? @db.VarChar(100)
+  addressLine String? @map("address_line") @db.VarChar(300)
+  timezone   String  @default("Asia/Ulaanbaatar") @db.VarChar(64)
+  locale     String  @default("mn") @db.VarChar(16)
+  currency   String  @default("MNT") @db.Char(3)
+
+  status RecordStatus @default(ACTIVE)
+
+  metadata   Json @default("{}")
+  rowVersion Int  @default(1) @map("row_version")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  setting            RestaurantSetting?
+  employees          Employee[]
+  categories         MenuCategory[]
+  orders             Order[]
+  kioskDevices       KioskDevice[]
+  kitchens           Kitchen[]
+  mediaAssets        MediaAsset[]
+  integrations       Integration[]
+
+  employeeMealTypes       EmployeeMealType[]
+  employeeOrderSchedules  EmployeeOrderSchedule[]
+  employeeMealDays        EmployeeMealDay[]
+
+  @@index([status])
+  @@index([deletedAt])
+  @@map("restaurants")
+  @@schema("restaurant")
+}
+
+model RestaurantSetting {
+  id           String @id @default(uuid(7)) @db.Uuid
+  restaurantId String @unique @map("restaurant_id") @db.Uuid
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  kioskEnabled          Boolean @default(false) @map("kiosk_enabled")
+  kitchenEnabled        Boolean @default(false) @map("kitchen_enabled")
+  employeeMealsEnabled  Boolean @default(false) @map("employee_meals_enabled")
+  qpayEnabled           Boolean @default(false) @map("qpay_enabled")
+  cardPaymentsEnabled   Boolean @default(false) @map("card_payments_enabled")
+  cashPaymentsEnabled   Boolean @default(true) @map("cash_payments_enabled")
+
+  orderNumberPrefix String @default("R") @map("order_number_prefix") @db.VarChar(8)
+  currency          String @default("MNT") @db.Char(3)
+
+  metadata   Json @default("{}")
+  rowVersion Int  @default(1) @map("row_version")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("restaurant_settings")
+  @@schema("restaurant")
+}

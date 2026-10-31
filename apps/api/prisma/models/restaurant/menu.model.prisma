@@ -1,0 +1,70 @@
+model MenuCategory {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  restaurantId String     @map("restaurant_id") @db.Uuid
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+
+  parentId String?        @map("parent_id") @db.Uuid
+  parent   MenuCategory?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children MenuCategory[] @relation("CategoryTree")
+
+  code         String             @db.VarChar(32)
+  name         String             @db.VarChar(200)
+  description  String?            @db.Text
+  sortOrder    Int                @default(0) @map("sort_order")
+  status       RecordStatus       @default(DRAFT)
+  availability AvailabilityStatus @default(AVAILABLE)
+
+  metadata   Json @default("{}")
+  rowVersion Int  @default(1) @map("row_version")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  items  MenuItem[]
+  images MenuCategoryImage[]
+
+  @@unique([restaurantId, code])
+  @@index([parentId, sortOrder])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("menu_categories")
+  @@schema("restaurant")
+}
+
+model MenuItem {
+  id       String @id @default(uuid(7)) @db.Uuid
+  publicId String @unique @default(uuid(7)) @map("public_id") @db.Uuid
+
+  categoryId String       @map("category_id") @db.Uuid
+  category   MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  sku          String             @db.VarChar(64)
+  name         String             @db.VarChar(200)
+  description  String?            @db.Text
+  foodType     FoodType           @default(ORDERED) @map("food_type")
+  currency     String             @default("MNT") @db.Char(3)
+  price        Decimal            @default(0) @db.Decimal(14, 2)
+  sortOrder    Int                @default(0) @map("sort_order")
+  status       RecordStatus       @default(DRAFT)
+  availability AvailabilityStatus @default(AVAILABLE)
+
+  metadata   Json @default("{}")
+  rowVersion Int  @default(1) @map("row_version")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  images           MenuItemImage[]
+  orderItems       OrderItem[]
+  employeeMealDays EmployeeMealDay[]
+
+  @@unique([categoryId, sku])
+  @@index([foodType, sortOrder])
+  @@index([status, availability, sortOrder])
+  @@index([deletedAt])
+  @@map("menu_items")
+  @@schema("restaurant")
+}

@@ -1,0 +1,20 @@
+{
+  "_comment": "Copy to kiosk.config.json. simulate true keeps POS and printer in the example path.",
+  "display": {
+    "preset": "portraitKiosk",
+    "fullscreen": true,
+    "useNativeResolution": false,
+    "resizable": false
+  },
+  "printer": {
+    "enabled": true,
+    "interface": "printer:POS-80",
+    "simulate": true
+  },
+  "pos": {
+    "enabled": true,
+    "comPort": "COM3",
+    "baudRate": 9600,
+    "simulate": true
+  }
+}

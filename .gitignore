@@ -1,0 +1,82 @@
+# dependencies
+node_modules
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# pnpm
+.pnpm-store
+.pnpm-debug.log*
+
+# builds / caches
+dist
+build
+out
+.next
+.turbo
+.cache
+*.tsbuildinfo
+
+# tests / coverage
+coverage
+.nyc_output
+
+# logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# env / secrets
+.env
+.env.*
+!.env.example
+config.env
+*.local
+
+# prisma generated client
+**/generated/prisma
+
+# local user files (not apps/api/src/uploads)
+/uploads
+tmp
+.temp
+.tmp
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDEs
+.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# diagnostics
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# vercel
+.vercel
+
+# Electron desktop compilation output
+apps/desktop/electron-dist/

@@ -1,0 +1,30 @@
+model UserIdentity {
+  id     String @id @default(uuid(7)) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  provider         IdentityProvider
+  providerUserId   String           @map("provider_user_id") @db.VarChar(255)
+  providerTenantId String?          @map("provider_tenant_id") @db.VarChar(255)
+  providerEmail    String?          @map("provider_email") @db.VarChar(320)
+  providerData     Json             @default("{}") @map("provider_data")
+
+  accessTokenEncrypted  String?   @map("access_token_encrypted") @db.Text
+  refreshTokenEncrypted String?   @map("refresh_token_encrypted") @db.Text
+  tokenExpiresAt        DateTime? @map("token_expires_at") @db.Timestamptz
+
+  linkedAt    DateTime  @default(now()) @map("linked_at") @db.Timestamptz
+  lastLoginAt DateTime? @map("last_login_at") @db.Timestamptz
+  isVerified  Boolean   @default(false) @map("is_verified")
+  isPrimary   Boolean   @default(false) @map("is_primary")
+
+  metadata  Json      @default("{}")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  @@unique([provider, providerUserId])
+  @@index([userId, provider])
+  @@map("user_identities")
+  @@schema("iam")
+}

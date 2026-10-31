@@ -1,0 +1,72 @@
+model Employee {
+  id       String @id @default(uuid(7)) @db.Uuid
+  publicId String @unique @default(uuid(7)) @map("public_id") @db.Uuid
+
+  restaurantId String     @map("restaurant_id") @db.Uuid
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+
+  userId String? @map("user_id") @db.Uuid
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  employeeCode String? @map("employee_code") @db.VarChar(32)
+  firstName    String @map("first_name") @db.VarChar(100)
+  lastName     String @map("last_name") @db.VarChar(100)
+  department   String @db.VarChar(100)
+  position     String @db.VarChar(100)
+
+  externalId String? @map("external_id") @db.Uuid
+  vehicle    Json?
+
+  status EmployeeStatus @default(ACTIVE)
+
+  metadata   Json @default("{}")
+  rowVersion Int  @default(1) @map("row_version")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  meals             EmployeeMeal[]
+  orders            Order[]
+  kioskSessions     KioskSession[]
+  mealOrders        EmployeeMealOrder[]
+
+  @@unique([restaurantId, employeeCode])
+  @@unique([restaurantId, externalId])
+  @@index([employeeCode])
+  @@index([userId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("employees")
+  @@schema("restaurant")
+}
+
+model EmployeeMeal {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  employeeId String   @map("employee_id") @db.Uuid
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  orderId String? @unique @map("order_id") @db.Uuid
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  mealType   MealType           @map("meal_type")
+  status     EmployeeMealStatus @default(CONSUMED)
+  consumedAt DateTime           @map("consumed_at") @db.Timestamptz
+
+  currency            String  @default("MNT") @db.Char(3)
+  foodAmount          Decimal @map("food_amount") @db.Decimal(14, 2)
+  subsidyAmount       Decimal @map("subsidy_amount") @db.Decimal(14, 2)
+  employeePaidAmount  Decimal @map("employee_paid_amount") @db.Decimal(14, 2)
+
+  cancelledAt DateTime? @map("cancelled_at") @db.Timestamptz
+  metadata    Json      @default("{}")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([employeeId, consumedAt])
+  @@index([status])
+  @@map("employee_meals")
+  @@schema("restaurant")
+}

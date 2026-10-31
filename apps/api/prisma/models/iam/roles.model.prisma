@@ -1,0 +1,24 @@
+model Role {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  slug        String    @unique @db.VarChar(64)
+  name        String    @db.VarChar(100)
+  description String?   @db.Text
+  scope       RoleScope @default(PLATFORM)
+  isSystem    Boolean   @default(false) @map("is_system")
+  isDefault   Boolean   @default(false) @map("is_default")
+  priority    Int       @default(0)
+
+  createdById String? @map("created_by_id") @db.Uuid
+  metadata    Json    @default("{}")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  permissions RolePermission[]
+  userRoles   UserRole[]
+
+  @@index([scope, isSystem])
+  @@map("roles")
+  @@schema("iam")
+}

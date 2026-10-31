@@ -1,0 +1,18 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+allowBuilds:
+  '@parcel/watcher': true
+  '@prisma/engines': true
+  '@scarf/scarf': true
+  electron-winstaller: true
+  esbuild: true
+  msgpackr-extract: true
+  prisma: true
+  # Declared here so pnpm never prompts from apps/admin or apps/desktop again. An
+  # answer given in a subdirectory gets written to a pnpm-workspace.yaml there,
+  # which makes pnpm treat that app as its own workspace root and breaks every
+  # @packages/* import.
+  sharp: false
+  unrs-resolver: true
+  workerd: true

@@ -1,0 +1,29 @@
+model UserVerification {
+  id     String @id @default(uuid(7)) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  channel  VerificationChannel
+  purpose  VerificationPurpose
+  status   VerificationStatus  @default(PENDING)
+  codeHash String              @map("code_hash")
+  target   String?             @db.VarChar(320)
+
+  attempts    Int @default(0)
+  maxAttempts Int @default(5) @map("max_attempts")
+
+  ipAddress String? @map("ip_address") @db.Inet
+  userAgent String? @map("user_agent") @db.Text
+
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz
+  verifiedAt DateTime? @map("verified_at") @db.Timestamptz
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz
+
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([userId, purpose, status])
+  @@index([expiresAt])
+  @@map("user_verifications")
+  @@schema("iam")
+}
