@@ -55,6 +55,7 @@ export function MealOrdersTable({
           <MTableHead>Төрөл</MTableHead>
           <MTableHead>Ажилтан</MTableHead>
           <MTableHead>Код</MTableHead>
+          <MTableHead>Улсын дугаар</MTableHead>
           <MTableHead>Хэлбэр</MTableHead>
           <MTableHead>Хаана</MTableHead>
           <MTableHead>Төлөв</MTableHead>
@@ -65,21 +66,11 @@ export function MealOrdersTable({
           <MTableRow key={item.id}>
             <MTableCell>{item.serviceDate}</MTableCell>
             <MTableCell>{item.mealTypeName}</MTableCell>
-            <MTableCell className="font-medium">
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-1">
-                  <span className="text-xs text-muted-foreground">Ажилтан:</span>
-                  <span className="text-xs">{item.employeeName}</span>
-                </div>
-                {item.plateNumber ? (
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-muted-foreground">Техник:</span>
-                    <span className="text-xs">{item.plateNumber}</span>
-                  </div>
-                ) : null}
-              </div>
-            </MTableCell>
+            <MTableCell className="font-medium">{item.employeeName}</MTableCell>
             <MTableCell>{item.employeeCode}</MTableCell>
+            <MTableCell className="font-mono text-xs">
+              {item.plateNumber?.trim() || '—'}
+            </MTableCell>
             <MTableCell>{formatFulfillmentType(item.fulfillmentType)}</MTableCell>
             <MTableCell>
               {item.fulfillmentType === 'DELIVERY'

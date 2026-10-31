@@ -35,7 +35,7 @@ export async function exportMealOrders(options: { from: string; to: string; sear
         value: (row) => (row.employeeId ? row.employeeName : 'Ажилтан олдсонгүй'),
       },
       { header: 'Код', width: 16, value: (row) => row.employeeCode },
-      { header: 'Техник', width: 16, value: (row) => row.plateNumber ?? '' },
+      { header: 'Улсын дугаар', width: 16, value: (row) => row.plateNumber?.trim() || '' },
       {
         header: 'Хэлбэр',
         width: 16,
