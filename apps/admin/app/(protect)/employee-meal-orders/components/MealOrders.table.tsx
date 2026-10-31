@@ -19,7 +19,7 @@ import { MTableSkeleton } from '@packages/ui/main/MTableSkeleton';
 
 import { Icons } from '@/utils/icons';
 
-import { MEAL_ORDER_STATUS_LABELS } from '../lib/labels';
+import { formatFulfillmentType, MEAL_ORDER_STATUS_LABELS } from '../lib/labels';
 
 export function MealOrdersTable({
   items,
@@ -55,6 +55,8 @@ export function MealOrdersTable({
           <MTableHead>Төрөл</MTableHead>
           <MTableHead>Ажилтан</MTableHead>
           <MTableHead>Код</MTableHead>
+          <MTableHead>Хэлбэр</MTableHead>
+          <MTableHead>Хаана</MTableHead>
           <MTableHead>Төлөв</MTableHead>
         </MTableRow>
       </MTableHeader>
@@ -64,22 +66,26 @@ export function MealOrdersTable({
             <MTableCell>{item.serviceDate}</MTableCell>
             <MTableCell>{item.mealTypeName}</MTableCell>
             <MTableCell className="font-medium">
-              {item.employeeId
-                ? <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs text-muted-foreground">Ажилтан:</span>
-                      <span className="text-xs">{item.employeeName}</span>
-                    </div>
-                    {item.plateNumber && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs text-muted-foreground">Техник:</span>
-                        <span className="text-xs">{item.plateNumber}</span>
-                      </div>
-                    )}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground">Ажилтан:</span>
+                  <span className="text-xs">{item.employeeName}</span>
+                </div>
+                {item.plateNumber ? (
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground">Техник:</span>
+                    <span className="text-xs">{item.plateNumber}</span>
                   </div>
-                : 'Ажилтан олдсонгүй'}
+                ) : null}
+              </div>
             </MTableCell>
             <MTableCell>{item.employeeCode}</MTableCell>
+            <MTableCell>{formatFulfillmentType(item.fulfillmentType)}</MTableCell>
+            <MTableCell>
+              {item.fulfillmentType === 'DELIVERY'
+                ? item.deliveryLocation?.trim() || '—'
+                : '—'}
+            </MTableCell>
             <MTableCell>
               <MSelect
                 value={item.status}

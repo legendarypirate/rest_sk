@@ -3,7 +3,7 @@ import type { EmployeeMealOrderItem } from '@packages/types';
 
 import { listEmployeeMealOrders } from '@/services/employee-meals/employee-meals.service';
 
-import { MEAL_ORDER_STATUS_LABELS } from './labels';
+import { formatFulfillmentType, MEAL_ORDER_STATUS_LABELS } from './labels';
 
 export function mealOrderExportName(from: string, to: string) {
   return from === to ? `order-${from}` : `order-${from}-to-${to}`;
@@ -36,6 +36,17 @@ export async function exportMealOrders(options: { from: string; to: string; sear
       },
       { header: 'Код', width: 16, value: (row) => row.employeeCode },
       { header: 'Техник', width: 16, value: (row) => row.plateNumber ?? '' },
+      {
+        header: 'Хэлбэр',
+        width: 16,
+        value: (row) => formatFulfillmentType(row.fulfillmentType),
+      },
+      {
+        header: 'Хаана',
+        width: 24,
+        value: (row) =>
+          row.fulfillmentType === 'DELIVERY' ? row.deliveryLocation?.trim() || '' : '',
+      },
       { header: 'Төлөв', width: 14, value: (row) => MEAL_ORDER_STATUS_LABELS[row.status] },
     ],
     rows: result.items,

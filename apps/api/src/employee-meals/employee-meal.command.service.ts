@@ -33,6 +33,29 @@ import {
 } from './employee-meal.mapper';
 import { EmployeeMealQueryService } from './employee-meal.query.service';
 
+function normalizeOptional(value?: string | null) {
+  const next = value?.trim() ?? '';
+  return next.length > 0 ? next : null;
+}
+
+function resolveFulfillment(input: CreateEmployeeMealOrderDto): {
+  type: 'CAMP' | 'DELIVERY' | null;
+  location: string | null;
+} {
+  const type = input.fulfillmentType ?? null;
+  const location = normalizeOptional(input.deliveryLocation);
+  if (type === 'DELIVERY') {
+    if (!location) {
+      throw new BadRequestAppException();
+    }
+    return { type, location };
+  }
+  if (type === 'CAMP') {
+    return { type, location: null };
+  }
+  return { type: null, location: null };
+}
+
 @Injectable()
 export class EmployeeMealCommandService {
   constructor(
@@ -338,6 +361,7 @@ export class EmployeeMealCommandService {
       select: { id: true },
     });
 
+    const fulfillment = resolveFulfillment(input);
     const id = await this.prisma.$transaction(async (tx) => {
       const row = await tx.employeeMealOrder.create({
         data: {
@@ -345,6 +369,9 @@ export class EmployeeMealCommandService {
           employeeCode: code,
           employeeId: employee?.id ?? null,
           status: EmployeeMealOrderStatus.ORDERED,
+          plateNumber: normalizeOptional(input.plateNumber),
+          fulfillmentType: fulfillment.type,
+          deliveryLocation: fulfillment.location,
         },
       });
       if (actor) {
@@ -390,6 +417,7 @@ export class EmployeeMealCommandService {
       where: { restaurantId: day.restaurantId, employeeCode: code, deletedAt: null },
       select: { id: true },
     });
+    const fulfillment = resolveFulfillment(input);
     const id = await this.prisma.employeeMealOrder
       .create({
         data: {
@@ -397,6 +425,9 @@ export class EmployeeMealCommandService {
           employeeCode: code,
           employeeId: employee?.id ?? null,
           status: EmployeeMealOrderStatus.ORDERED,
+          plateNumber: normalizeOptional(input.plateNumber),
+          fulfillmentType: fulfillment.type,
+          deliveryLocation: fulfillment.location,
         },
         select: { id: true },
       })

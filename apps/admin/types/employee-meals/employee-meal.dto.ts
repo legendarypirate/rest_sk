@@ -64,6 +64,9 @@ export type ListEmployeeMealOrdersQueryDto = {
 export type CreateEmployeeMealOrderDto = {
   mealDayId: string;
   employeeCode: string;
+  plateNumber?: string | null;
+  fulfillmentType?: 'CAMP' | 'DELIVERY' | null;
+  deliveryLocation?: string | null;
 };
 
 export type UpdateEmployeeMealOrderDto = {

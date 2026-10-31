@@ -7,6 +7,18 @@ export type EmployeeMealDayStatus = (typeof EMPLOYEE_MEAL_DAY_STATUSES)[number];
 export const EMPLOYEE_MEAL_ORDER_STATUSES = ['ORDERED', 'CANCELLED', 'CONSUMED'] as const;
 export type EmployeeMealOrderStatus = (typeof EMPLOYEE_MEAL_ORDER_STATUSES)[number];
 
+export const EMPLOYEE_MEAL_FULFILLMENT_TYPES = ['CAMP', 'DELIVERY'] as const;
+export type EmployeeMealFulfillmentType =
+  (typeof EMPLOYEE_MEAL_FULFILLMENT_TYPES)[number];
+
+export function formatEmployeeMealFulfillment(
+  type?: EmployeeMealFulfillmentType | string | null,
+): string {
+  if (type === 'CAMP') return 'Кэмп дээр';
+  if (type === 'DELIVERY') return 'Хүргэлтээр';
+  return '—';
+}
+
 export type EmployeeMealTypeItem = {
   id: string;
   publicId: string;
@@ -50,6 +62,7 @@ export type EmployeeMealDayItem = {
   id: string;
   publicId: string;
   mealTypeId: string;
+  mealType: EmployeeMealKind;
   mealTypeName: string;
   serviceDate: string;
   name: string | null;
@@ -76,6 +89,8 @@ export type EmployeeMealOrderItem = {
   employeeCode: string;
   employeeName: string;
   plateNumber: string | null;
+  fulfillmentType: EmployeeMealFulfillmentType | null;
+  deliveryLocation: string | null;
   status: EmployeeMealOrderStatus;
   orderedAt: string;
   cancelledAt: string | null;

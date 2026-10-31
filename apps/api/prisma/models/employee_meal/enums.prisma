@@ -20,3 +20,11 @@ enum EmployeeMealOrderStatus {
 
   @@schema("employee_meal")
 }
+
+/// CAMP = Кэмп дээр, DELIVERY = Хүргэлтээр (MLOS driver orders).
+enum EmployeeMealFulfillmentType {
+  CAMP
+  DELIVERY
+
+  @@schema("employee_meal")
+}

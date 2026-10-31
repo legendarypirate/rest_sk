@@ -107,6 +107,14 @@ model EmployeeMealOrder {
   employeeId   String?   @map("employee_id") @db.Uuid
   employee     Employee? @relation(fields: [employeeId], references: [id], onDelete: Restrict)
 
+  /// Driver vehicle plate from MLOS (optional).
+  plateNumber String? @map("plate_number") @db.VarChar(20)
+
+  /// CAMP = Кэмп дээр, DELIVERY = Хүргэлтээр.
+  fulfillmentType  EmployeeMealFulfillmentType? @map("fulfillment_type")
+  /// Required when fulfillmentType is DELIVERY (Хаана).
+  deliveryLocation String?                      @map("delivery_location") @db.VarChar(200)
+
   status     EmployeeMealOrderStatus @default(ORDERED)
   orderedAt  DateTime                @default(now()) @map("ordered_at") @db.Timestamptz
   cancelledAt DateTime?              @map("cancelled_at") @db.Timestamptz
@@ -121,6 +129,8 @@ model EmployeeMealOrder {
   @@unique([mealDayId, employeeCode])
   @@index([employeeId, orderedAt])
   @@index([status, orderedAt])
+  @@index([fulfillmentType])
+  @@index([plateNumber])
   @@map("employee_meal_order")
   @@schema("employee_meal")
 }

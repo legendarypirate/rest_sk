@@ -109,7 +109,7 @@ export function toMealDay(
     id: string;
     publicId: string;
     mealTypeId: string;
-    mealType: { name: string };
+    mealType: { name: string; kind: EmployeeMealDayItem['mealType'] };
     serviceDate: Date;
     name: string | null;
     menuItemId: string | null;
@@ -131,6 +131,7 @@ export function toMealDay(
     id: row.id,
     publicId: row.publicId,
     mealTypeId: row.mealTypeId,
+    mealType: row.mealType.kind,
     mealTypeName: row.mealType.name,
     serviceDate: toDateOnlyString(row.serviceDate),
     name: row.menuItem?.name ?? row.name,
@@ -168,6 +169,9 @@ export function toMealOrder(row: {
     lastName: string;
     vehicle: unknown;
   } | null;
+  plateNumber?: string | null;
+  fulfillmentType?: EmployeeMealOrderItem['fulfillmentType'];
+  deliveryLocation?: string | null;
   status: EmployeeMealOrderItem['status'];
   orderedAt: Date;
   cancelledAt: Date | null;
@@ -175,6 +179,7 @@ export function toMealOrder(row: {
   createdAt: Date;
   updatedAt: Date;
 }): EmployeeMealOrderItem {
+  const storedPlate = row.plateNumber?.trim() || null;
   return {
     id: row.id,
     publicId: row.publicId,
@@ -186,7 +191,12 @@ export function toMealOrder(row: {
     employeeName: row.employee
       ? `${row.employee.lastName} ${row.employee.firstName}`
       : 'Ажилтан олдсонгүй',
-    plateNumber: plateNumberOf(row.employee?.vehicle),
+    plateNumber: storedPlate ?? plateNumberOf(row.employee?.vehicle),
+    fulfillmentType: row.fulfillmentType ?? null,
+    deliveryLocation:
+      row.fulfillmentType === 'DELIVERY'
+        ? row.deliveryLocation?.trim() || null
+        : null,
     status: row.status,
     orderedAt: row.orderedAt.toISOString(),
     cancelledAt: toIso(row.cancelledAt),

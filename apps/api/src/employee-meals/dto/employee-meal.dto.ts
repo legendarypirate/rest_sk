@@ -14,13 +14,17 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsIn,
   IsUUID,
   Matches,
   Max,
   MinLength,
   MaxLength,
   Min,
+  ValidateIf,
 } from 'class-validator';
+
+import { EMPLOYEE_MEAL_FULFILLMENT_TYPES } from '@packages/types';
 
 import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
 
@@ -243,6 +247,35 @@ export class CreateEmployeeMealOrderDto {
   @MinLength(1)
   @MaxLength(32)
   employeeCode!: string;
+
+  @ApiPropertyOptional({
+    description: 'Driver vehicle plate from MLOS (optional)',
+    example: '6480УЕЕ',
+  })
+  @IsOptional()
+  @Transform(trimString)
+  @IsString()
+  @MaxLength(20)
+  plateNumber?: string;
+
+  @ApiPropertyOptional({
+    enum: EMPLOYEE_MEAL_FULFILLMENT_TYPES,
+    description: 'CAMP = Кэмп дээр, DELIVERY = Хүргэлтээр',
+  })
+  @IsOptional()
+  @IsIn(EMPLOYEE_MEAL_FULFILLMENT_TYPES)
+  fulfillmentType?: (typeof EMPLOYEE_MEAL_FULFILLMENT_TYPES)[number];
+
+  @ApiPropertyOptional({
+    description: 'Delivery location (Хаана) — required when DELIVERY',
+    example: 'Блок A',
+  })
+  @ValidateIf((o: CreateEmployeeMealOrderDto) => o.fulfillmentType === 'DELIVERY')
+  @Transform(trimString)
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  deliveryLocation?: string;
 }
 
 export class UpdateEmployeeMealOrderDto {

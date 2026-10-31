@@ -5,3 +5,5 @@ export const MEAL_ORDER_STATUS_LABELS: Record<EmployeeMealOrderStatus, string> =
   CANCELLED: 'Цуцалсан',
   CONSUMED: 'Идсэн',
 };
+
+export { formatEmployeeMealFulfillment as formatFulfillmentType } from '@packages/types';
