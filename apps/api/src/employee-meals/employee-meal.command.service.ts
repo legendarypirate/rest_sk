@@ -371,9 +371,6 @@ export class EmployeeMealCommandService {
           employeeCode: code,
           employeeId: employee?.id ?? null,
           status: EmployeeMealOrderStatus.ORDERED,
-          plateNumber: normalizeOptional(input.plateNumber),
-          fulfillmentType: fulfillment.type,
-          deliveryLocation: fulfillment.location,
         },
       });
       if (actor) {
@@ -393,6 +390,11 @@ export class EmployeeMealCommandService {
       }
       this.logPrismaFailure('createOrder', error);
       throw error;
+    });
+    await this.persistDriverFields(id, {
+      plateNumber: normalizeOptional(input.plateNumber),
+      fulfillmentType: fulfillment.type,
+      deliveryLocation: fulfillment.location,
     });
     this.realtime.emitOrgMealOrderUpdate({
       orderId: id,
@@ -425,6 +427,8 @@ export class EmployeeMealCommandService {
       mealDayId: day.id,
       employeeCode: code,
       employeeId: employee?.id ?? null,
+    });
+    await this.persistDriverFields(id, {
       plateNumber: normalizeOptional(input.plateNumber),
       fulfillmentType: fulfillment.type,
       deliveryLocation: fulfillment.location,
@@ -511,9 +515,6 @@ export class EmployeeMealCommandService {
     mealDayId: string;
     employeeCode: string;
     employeeId: string | null;
-    plateNumber: string | null;
-    fulfillmentType: 'CAMP' | 'DELIVERY' | null;
-    deliveryLocation: string | null;
   }): Promise<string> {
     try {
       const row = await this.prisma.employeeMealOrder.create({
@@ -522,9 +523,6 @@ export class EmployeeMealCommandService {
           employeeCode: input.employeeCode,
           employeeId: input.employeeId,
           status: EmployeeMealOrderStatus.ORDERED,
-          plateNumber: input.plateNumber,
-          fulfillmentType: input.fulfillmentType,
-          deliveryLocation: input.deliveryLocation,
         },
         select: { id: true },
       });
@@ -536,6 +534,74 @@ export class EmployeeMealCommandService {
       this.logPrismaFailure('requestOrder', error);
       throw error;
     }
+  }
+
+  /**
+   * Stale Prisma clients reject `plateNumber` as an unknown arg.
+   * Persist driver fields with SQL so orders work before `prisma generate`.
+   */
+  private async persistDriverFields(
+    id: string,
+    input: {
+      plateNumber: string | null;
+      fulfillmentType: 'CAMP' | 'DELIVERY' | null;
+      deliveryLocation: string | null;
+    },
+  ) {
+    if (!input.plateNumber && !input.fulfillmentType && !input.deliveryLocation) {
+      return;
+    }
+    try {
+      try {
+        await this.updateDriverFields(id, input);
+      } catch (error) {
+        this.logger.warn(
+          `persistDriverFields first attempt failed id=${id} — ensuring columns`,
+          error instanceof Error ? error.message : String(error),
+        );
+        await this.ensureDriverFieldColumns();
+        await this.updateDriverFields(id, input);
+      }
+    } catch (error) {
+      this.logger.error(
+        `persistDriverFields failed id=${id}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
+  }
+
+  private async updateDriverFields(
+    id: string,
+    input: {
+      plateNumber: string | null;
+      fulfillmentType: 'CAMP' | 'DELIVERY' | null;
+      deliveryLocation: string | null;
+    },
+  ) {
+    await this.prisma.$executeRaw`
+      UPDATE employee_meal.employee_meal_order
+      SET
+        plate_number = ${input.plateNumber},
+        fulfillment_type = CAST(${input.fulfillmentType} AS employee_meal."EmployeeMealFulfillmentType"),
+        delivery_location = ${input.deliveryLocation}
+      WHERE id = CAST(${id} AS uuid)
+    `;
+  }
+
+  private async ensureDriverFieldColumns() {
+    await this.prisma.$executeRawUnsafe(`
+      DO $$ BEGIN
+        CREATE TYPE employee_meal."EmployeeMealFulfillmentType" AS ENUM ('CAMP', 'DELIVERY');
+      EXCEPTION
+        WHEN duplicate_object THEN NULL;
+      END $$;
+    `);
+    await this.prisma.$executeRawUnsafe(`
+      ALTER TABLE employee_meal.employee_meal_order
+        ADD COLUMN IF NOT EXISTS plate_number VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS fulfillment_type employee_meal."EmployeeMealFulfillmentType",
+        ADD COLUMN IF NOT EXISTS delivery_location VARCHAR(200);
+    `);
   }
 
   private logPrismaFailure(action: string, error: unknown) {

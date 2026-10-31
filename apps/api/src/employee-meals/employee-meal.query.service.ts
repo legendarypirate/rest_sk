@@ -222,7 +222,13 @@ export class EmployeeMealQueryService {
       }),
       this.prisma.employeeMealOrder.count({ where }),
     ]);
-    return paginated(rows.map(toMealOrder), total, page, limit);
+    const extras = await this.loadDriverFields(rows.map((row) => row.id));
+    return paginated(
+      rows.map((row) => toMealOrder({ ...row, ...extras.get(row.id) })),
+      total,
+      page,
+      limit,
+    );
   }
 
   async getOrder(id: string) {
@@ -233,6 +239,49 @@ export class EmployeeMealQueryService {
     if (!row) {
       throw new NotFoundAppException();
     }
-    return toMealOrder(row);
+    const extras = await this.loadDriverFields([id]);
+    return toMealOrder({ ...row, ...extras.get(id) });
+  }
+
+  private async loadDriverFields(ids: string[]) {
+    const empty = new Map<
+      string,
+      {
+        plateNumber?: string | null;
+        fulfillmentType?: 'CAMP' | 'DELIVERY' | null;
+        deliveryLocation?: string | null;
+      }
+    >();
+    if (ids.length === 0) return empty;
+    try {
+      const rows = await this.prisma.$queryRaw<
+        Array<{
+          id: string;
+          plate_number: string | null;
+          fulfillment_type: 'CAMP' | 'DELIVERY' | null;
+          delivery_location: string | null;
+        }>
+      >`
+        SELECT
+          id::text AS id,
+          plate_number,
+          fulfillment_type::text AS fulfillment_type,
+          delivery_location
+        FROM employee_meal.employee_meal_order
+        WHERE id IN (${Prisma.join(ids.map((id) => Prisma.sql`CAST(${id} AS uuid)`))})
+      `;
+      return new Map(
+        rows.map((row) => [
+          row.id,
+          {
+            plateNumber: row.plate_number,
+            fulfillmentType: row.fulfillment_type,
+            deliveryLocation: row.delivery_location,
+          },
+        ]),
+      );
+    } catch {
+      return empty;
+    }
   }
 }
