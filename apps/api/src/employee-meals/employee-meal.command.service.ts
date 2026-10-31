@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   AuditAction,
   EmployeeMealOrderStatus,
@@ -58,6 +58,8 @@ function resolveFulfillment(input: CreateEmployeeMealOrderDto): {
 
 @Injectable()
 export class EmployeeMealCommandService {
+  private readonly logger = new Logger(EmployeeMealCommandService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly queries: EmployeeMealQueryService,
@@ -389,6 +391,7 @@ export class EmployeeMealCommandService {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictAppException();
       }
+      this.logPrismaFailure('createOrder', error);
       throw error;
     });
     this.realtime.emitOrgMealOrderUpdate({
@@ -418,26 +421,14 @@ export class EmployeeMealCommandService {
       select: { id: true },
     });
     const fulfillment = resolveFulfillment(input);
-    const id = await this.prisma.employeeMealOrder
-      .create({
-        data: {
-          mealDayId: day.id,
-          employeeCode: code,
-          employeeId: employee?.id ?? null,
-          status: EmployeeMealOrderStatus.ORDERED,
-          plateNumber: normalizeOptional(input.plateNumber),
-          fulfillmentType: fulfillment.type,
-          deliveryLocation: fulfillment.location,
-        },
-        select: { id: true },
-      })
-      .then((row) => row.id)
-      .catch((error: unknown) => {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-          throw new ConflictAppException();
-        }
-        throw error;
-      });
+    const id = await this.createEmployeeOrderRow({
+      mealDayId: day.id,
+      employeeCode: code,
+      employeeId: employee?.id ?? null,
+      plateNumber: normalizeOptional(input.plateNumber),
+      fulfillmentType: fulfillment.type,
+      deliveryLocation: fulfillment.location,
+    });
     this.realtime.emitOrgMealOrderUpdate({
       orderId: id,
       action: 'created',
@@ -514,6 +505,55 @@ export class EmployeeMealCommandService {
       employeeCode,
       employeeId,
     });
+  }
+
+  private async createEmployeeOrderRow(input: {
+    mealDayId: string;
+    employeeCode: string;
+    employeeId: string | null;
+    plateNumber: string | null;
+    fulfillmentType: 'CAMP' | 'DELIVERY' | null;
+    deliveryLocation: string | null;
+  }): Promise<string> {
+    try {
+      const row = await this.prisma.employeeMealOrder.create({
+        data: {
+          mealDayId: input.mealDayId,
+          employeeCode: input.employeeCode,
+          employeeId: input.employeeId,
+          status: EmployeeMealOrderStatus.ORDERED,
+          plateNumber: input.plateNumber,
+          fulfillmentType: input.fulfillmentType,
+          deliveryLocation: input.deliveryLocation,
+        },
+        select: { id: true },
+      });
+      return row.id;
+    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictAppException();
+      }
+      this.logPrismaFailure('requestOrder', error);
+      throw error;
+    }
+  }
+
+  private logPrismaFailure(action: string, error: unknown) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      this.logger.error(
+        `${action} prisma ${error.code} ${error.message}`,
+        JSON.stringify(error.meta ?? {}),
+      );
+      return;
+    }
+    if (error instanceof Prisma.PrismaClientValidationError) {
+      this.logger.error(`${action} prisma validation ${error.message}`);
+      return;
+    }
+    this.logger.error(
+      `${action} failed`,
+      error instanceof Error ? error.stack : String(error),
+    );
   }
 
   private assertWindow(opensAt: string, closesAt: string) {
