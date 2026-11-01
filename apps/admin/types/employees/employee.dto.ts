@@ -5,6 +5,19 @@ export type ListEmployeesQueryDto = {
   limit?: number | '*';
   search?: string;
   status?: EmployeeStatus;
-  sortBy?: 'createdAt' | 'employeeCode' | 'firstName' | 'lastName';
+  sortBy?:
+    | 'createdAt'
+    | 'updatedAt'
+    | 'employeeCode'
+    | 'firstName'
+    | 'lastName'
+    | 'department'
+    | 'position'
+    | 'status'
+    | 'vehiclePlate';
   sortDirection?: SortDirection;
+};
+
+export type UpdateEmployeeStatusDto = {
+  status: EmployeeStatus;
 };

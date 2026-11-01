@@ -1,11 +1,21 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { EmployeeStatus } from '@generated/prisma/client';
 import { Transform } from 'class-transformer';
 import { IsEnum, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 
 import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
 
-const EMPLOYEE_SORT_FIELDS = ['createdAt', 'employeeCode', 'firstName', 'lastName'] as const;
+export const EMPLOYEE_SORT_FIELDS = [
+  'createdAt',
+  'updatedAt',
+  'employeeCode',
+  'firstName',
+  'lastName',
+  'department',
+  'position',
+  'status',
+  'vehiclePlate',
+] as const;
 
 function trimString({ value }: { value: unknown }) {
   if (typeof value !== 'string') {
@@ -32,4 +42,10 @@ export class ListEmployeesQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsIn(EMPLOYEE_SORT_FIELDS)
   sortBy?: (typeof EMPLOYEE_SORT_FIELDS)[number];
+}
+
+export class UpdateEmployeeStatusDto {
+  @ApiProperty({ enum: EmployeeStatus })
+  @IsEnum(EmployeeStatus)
+  status!: EmployeeStatus;
 }

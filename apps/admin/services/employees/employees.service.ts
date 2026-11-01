@@ -3,7 +3,10 @@ import type { EmployeeListItem, EmployeeSyncAllResult, Paginated } from '@packag
 import { api } from '@/lib/api';
 import { toSearchParams } from '@/lib/search-params';
 import { syncAllIntegrationEmployees } from '@/services/integrations/integrations.service';
-import type { ListEmployeesQueryDto } from '@/types/employees/employee.dto';
+import type {
+  ListEmployeesQueryDto,
+  UpdateEmployeeStatusDto,
+} from '@/types/employees/employee.dto';
 
 export function listEmployees(params: ListEmployeesQueryDto = {}) {
   return api<Paginated<EmployeeListItem>>(
@@ -20,4 +23,11 @@ export function listEmployees(params: ListEmployeesQueryDto = {}) {
 
 export function syncEmployees(): Promise<EmployeeSyncAllResult> {
   return syncAllIntegrationEmployees();
+}
+
+export function updateEmployeeStatus(id: string, dto: UpdateEmployeeStatusDto) {
+  return api<EmployeeListItem>(`employees/${id}/status`, {
+    method: 'PUT',
+    body: JSON.stringify(dto),
+  });
 }

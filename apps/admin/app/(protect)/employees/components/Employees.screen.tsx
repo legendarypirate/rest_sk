@@ -1,5 +1,6 @@
 'use client';
 
+import type { EmployeeStatus } from '@packages/types';
 import { ImportButton } from '@packages/ui/main/MButtons';
 import { TableFooter } from '@packages/ui/main/MTable.footer';
 
@@ -7,7 +8,7 @@ import { usePermission } from '@/hooks/use.permission';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { PlatformPermission } from '@/types/routes';
 
-import { useEmployees, useEmployeeSync } from '../hooks';
+import { useEmployeeMutate, useEmployees, useEmployeeSync } from '../hooks';
 import { EmployeesFilters } from './Employees.filters';
 import { EmployeesTable } from './Employees.table';
 
@@ -16,6 +17,7 @@ export function EmployeesScreen() {
   const canSync = can(PlatformPermission.EmployeesEdit);
   const employees = useEmployees();
   const { sync } = useEmployeeSync();
+  const { changeStatus } = useEmployeeMutate();
 
   const meta = employees.query.data?.meta;
   const items = employees.query.data?.items ?? [];
@@ -64,6 +66,15 @@ export function EmployeesScreen() {
           sortBy={employees.sortBy}
           sortDirection={employees.sortDirection}
           onSort={employees.changeSort}
+          canEdit={canSync}
+          statusPendingId={changeStatus.isPending ? changeStatus.variables?.id : undefined}
+          onStatusChange={(item, status: EmployeeStatus) => {
+            if (status === item.status) {
+              return;
+            }
+
+            changeStatus.mutate({ id: item.id, status });
+          }}
         />
       </div>
 
