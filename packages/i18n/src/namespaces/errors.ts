@@ -24,6 +24,8 @@ const errorMessages = {
     [AppErrorCode.BAD_REQUEST]: 'The request is invalid.',
     [AppErrorCode.MEAL_WINDOW_CLOSED]:
       'Employee meal ordering is closed for this meal type right now.',
+    [AppErrorCode.EMPLOYEE_DISABLED]:
+      'This employee is disabled and cannot order meals.',
     [AppErrorCode.FORBIDDEN]: 'You do not have access.',
     [AppErrorCode.UNAUTHORIZED]: 'You are not authorized.',
     [AppErrorCode.RATE_LIMITED]: 'Too many requests. Please try again later.',
@@ -63,6 +65,8 @@ const errorMessages = {
     [AppErrorCode.BAD_REQUEST]: 'Хүсэлт буруу байна.',
     [AppErrorCode.MEAL_WINDOW_CLOSED]:
       'Энэ хоолны захиалгын цаг хаагдсан байна.',
+    [AppErrorCode.EMPLOYEE_DISABLED]:
+      'Энэ ажилтан идэвхгүй тул хоол захиалах боломжгүй.',
     [AppErrorCode.FORBIDDEN]: 'Хандах эрх байхгүй байна.',
     [AppErrorCode.UNAUTHORIZED]: 'Нэвтрэх эрх хүрэлцэхгүй байна.',
     [AppErrorCode.RATE_LIMITED]:

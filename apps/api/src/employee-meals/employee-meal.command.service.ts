@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   AuditAction,
   EmployeeMealOrderStatus,
+  EmployeeStatus,
   FoodType,
   Prisma,
 } from '@generated/prisma/client';
@@ -11,6 +12,7 @@ import {
   BadRequestAppException,
   ConflictAppException,
   ErrorCode,
+  ForbiddenAppException,
   NotFoundAppException,
 } from '@/common/exceptions';
 import type { AuthRequestContext } from '@/iam/auth-request.context';
@@ -358,10 +360,7 @@ export class EmployeeMealCommandService {
     if (!actor) {
       await this.assertOpenWindow(day.mealTypeId, day.restaurantId);
     }
-    const employee = await this.prisma.employee.findFirst({
-      where: { restaurantId: day.restaurantId, employeeCode: code, deletedAt: null },
-      select: { id: true },
-    });
+    const employee = await this.findOrderableEmployee(day.restaurantId, code);
 
     const fulfillment = resolveFulfillment(input);
     const id = await this.prisma.$transaction(async (tx) => {
@@ -418,10 +417,7 @@ export class EmployeeMealCommandService {
       throw new NotFoundAppException();
     }
     await this.assertOpenWindow(day.mealTypeId, day.restaurantId);
-    const employee = await this.prisma.employee.findFirst({
-      where: { restaurantId: day.restaurantId, employeeCode: code, deletedAt: null },
-      select: { id: true },
-    });
+    const employee = await this.findOrderableEmployee(day.restaurantId, code);
     const fulfillment = resolveFulfillment(input);
     const id = await this.createEmployeeOrderRow({
       mealDayId: day.id,
@@ -678,6 +674,20 @@ export class EmployeeMealCommandService {
     if (!open) {
       throw new BadRequestAppException(ErrorCode.MEAL_WINDOW_CLOSED);
     }
+  }
+
+  private async findOrderableEmployee(restaurantId: string, employeeCode: string) {
+    const employee = await this.prisma.employee.findFirst({
+      where: { restaurantId, employeeCode },
+      select: { id: true, status: true, deletedAt: true },
+    });
+    if (!employee) {
+      return null;
+    }
+    if (employee.deletedAt || employee.status !== EmployeeStatus.ACTIVE) {
+      throw new ForbiddenAppException(ErrorCode.EMPLOYEE_DISABLED);
+    }
+    return employee;
   }
 
   private async assertEFoodItem(tx: Prisma.TransactionClient, id: string) {
