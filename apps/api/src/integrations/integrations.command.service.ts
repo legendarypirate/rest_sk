@@ -184,7 +184,6 @@ export class IntegrationsCommandService {
     });
 
     const listed = await client.listAll<IntegrationEmployeeDetail>('/integration/employees');
-    const seen = new Set<string>();
 
     let saved = 0;
     for (const summary of listed) {
@@ -192,23 +191,10 @@ export class IntegrationsCommandService {
         `/integration/employees/${summary.id}`,
       );
       const wrote = await this.upsertEmployee(integration.restaurantId, detail);
-      if (detail.id) {
-        seen.add(detail.id);
-      }
       if (wrote) {
         saved += 1;
       }
     }
-
-    await this.prisma.employee.updateMany({
-      where: {
-        restaurantId: integration.restaurantId,
-        deletedAt: null,
-        status: { not: EmployeeStatus.INACTIVE },
-        externalId: seen.size > 0 ? { notIn: [...seen] } : { not: null },
-      },
-      data: { status: EmployeeStatus.INACTIVE, rowVersion: { increment: 1 } },
-    });
 
     await this.prisma.integration.update({
       where: { id },
@@ -263,7 +249,6 @@ export class IntegrationsCommandService {
       position: labelOf(employee.position),
       externalId: employee.id,
       vehicle: employee.vehicle ? (employee.vehicle as Prisma.InputJsonValue) : Prisma.DbNull,
-      status: mapStatus(employee.status),
     };
 
     const existing = await this.prisma.employee.findFirst({
@@ -280,10 +265,14 @@ export class IntegrationsCommandService {
     });
 
     if (!existing) {
-      await this.prisma.employee.create({ data: { restaurantId, ...data } });
+      await this.prisma.employee.create({
+        data: { restaurantId, ...data, status: mapStatus(employee.status) },
+      });
       return true;
     }
 
+    // Keep rest_sk status. Sync must not reactivate locally inactive staff
+    // just because they are still active in MLOS.
     await this.prisma.employee.update({
       where: { id: existing.id },
       data: { ...data, rowVersion: { increment: 1 } },
