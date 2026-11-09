@@ -1,6 +1,14 @@
 /** Trim HR / kiosk employee codes for stable DB lookups. */
 export function normalizeEmployeeCode(value: string) {
-  return value.trim();
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return '';
+  }
+  if (/^[\d\s\-_.]+$/.test(trimmed)) {
+    const digits = trimmed.replace(/\D/g, '');
+    return digits.length > 0 ? digits : trimmed;
+  }
+  return trimmed;
 }
 
 /** Legacy single key (alphanumeric, lowercased). */
@@ -38,11 +46,17 @@ export function employeeCodeLookupKeys(value: string): string[] {
 }
 
 export function registerEmployeeCodeKeys<T>(map: Map<string, T>, code: string, value: T) {
-  for (const key of employeeCodeLookupKeys(code)) {
-    map.set(key.toLowerCase(), value);
-    if (/^\d+$/.test(key)) {
-      map.set(key, value);
+  const normalized = normalizeEmployeeCode(code);
+  const seeds = normalized.length > 0 ? [code, normalized] : [code];
+  const keys = new Set<string>();
+  for (const seed of seeds) {
+    for (const key of employeeCodeLookupKeys(seed)) {
+      keys.add(key);
+      keys.add(key.toLowerCase());
     }
+  }
+  for (const key of keys) {
+    map.set(key, value);
   }
 }
 

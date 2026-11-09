@@ -7,6 +7,11 @@ import type {
 
 import { toIso } from '@/common/utils/date';
 
+import {
+  employeeNameFromParts,
+  readMetadataEmployeeName,
+} from './employee-meal-order-employee';
+
 export function toDateOnlyString(value: Date) {
   return value.toISOString().slice(0, 10);
 }
@@ -178,6 +183,7 @@ export function toMealOrder(row: {
   consumedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  metadata?: unknown;
 }): EmployeeMealOrderItem {
   const storedPlate = row.plateNumber?.trim() || null;
   return {
@@ -188,7 +194,7 @@ export function toMealOrder(row: {
     mealTypeName: row.mealDay.mealType.name,
     employeeId: row.employeeId,
     employeeCode: row.employeeCode,
-    employeeName: formatMealOrderEmployeeName(row.employee, row.employeeCode),
+    employeeName: mealOrderEmployeeDisplayName(row),
     plateNumber: storedPlate ?? plateNumberOf(row.employee?.vehicle),
     fulfillmentType: row.fulfillmentType ?? null,
     deliveryLocation:
@@ -204,17 +210,15 @@ export function toMealOrder(row: {
   };
 }
 
-function formatMealOrderEmployeeName(
-  employee: { firstName: string; lastName: string } | null,
-  _employeeCode: string,
-) {
-  if (employee) {
-    const name = `${employee.lastName} ${employee.firstName}`.trim();
-    if (name.length > 0) {
-      return name;
-    }
+function mealOrderEmployeeDisplayName(row: {
+  metadata?: unknown;
+  employee: { firstName: string; lastName: string } | null;
+}) {
+  const cached = readMetadataEmployeeName(row.metadata);
+  if (cached) {
+    return cached;
   }
-  return '—';
+  return (row.employee ? employeeNameFromParts(row.employee) : null) ?? '—';
 }
 
 function plateNumberOf(vehicle: unknown) {

@@ -38,6 +38,7 @@ import {
   normalizeEmployeeCode,
 } from '@/common/utils/employee-code';
 
+import { employeeDisplayNameMetadata } from './employee-meal-order-employee';
 import { EmployeeMealQueryService } from './employee-meal.query.service';
 
 function normalizeOptional(value?: string | null) {
@@ -374,6 +375,7 @@ export class EmployeeMealCommandService {
           mealDayId: day.id,
           employeeCode: code,
           employeeId: employee?.id ?? null,
+          metadata: employeeDisplayNameMetadata(employee) ?? {},
           status: EmployeeMealOrderStatus.ORDERED,
         },
       });
@@ -428,6 +430,7 @@ export class EmployeeMealCommandService {
       mealDayId: day.id,
       employeeCode: code,
       employeeId: employee?.id ?? null,
+      employee,
     });
     await this.persistDriverFields(id, {
       plateNumber: normalizeOptional(input.plateNumber),
@@ -516,6 +519,7 @@ export class EmployeeMealCommandService {
     mealDayId: string;
     employeeCode: string;
     employeeId: string | null;
+    employee?: { firstName: string; lastName: string } | null;
   }): Promise<string> {
     try {
       const row = await this.prisma.employeeMealOrder.create({
@@ -523,6 +527,7 @@ export class EmployeeMealCommandService {
           mealDayId: input.mealDayId,
           employeeCode: input.employeeCode,
           employeeId: input.employeeId,
+          metadata: employeeDisplayNameMetadata(input.employee) ?? {},
           status: EmployeeMealOrderStatus.ORDERED,
         },
         select: { id: true },
@@ -692,7 +697,13 @@ export class EmployeeMealCommandService {
           employeeCode: { equals: variant, mode: 'insensitive' },
         })),
       },
-      select: { id: true, status: true, deletedAt: true },
+      select: {
+        id: true,
+        status: true,
+        deletedAt: true,
+        firstName: true,
+        lastName: true,
+      },
     });
     if (!employee) {
       return null;
