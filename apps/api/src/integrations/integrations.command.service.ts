@@ -13,7 +13,9 @@ import type { AuthRequestContext } from '@/iam/auth-request.context';
 import type { AuthenticatedUser } from '@/iam/auth.types';
 import { PrismaService } from '@/prisma/prisma.service';
 
-import type { IntegrationEmployeeDetail, IntegrationRef } from '@packages/types';
+import type { IntegrationEmployee, IntegrationEmployeeDetail, IntegrationRef } from '@packages/types';
+
+import { employeeCodeKey, normalizeEmployeeCode } from '@/common/utils/employee-code';
 
 import type { UpsertIntegrationDto } from './dto/integration.dto';
 import { INTEGRATION_APIS } from './integration.catalog';
@@ -183,18 +185,31 @@ export class IntegrationsCommandService {
       clientSecret: decryptSecret(integration.secretCipher, this.key),
     });
 
-    const listed = await client.listAll<IntegrationEmployeeDetail>('/integration/employees');
+    const listed = await client.listAll<IntegrationEmployee>('/integration/employees');
 
     let saved = 0;
     for (const summary of listed) {
-      const detail = await client.getItem<IntegrationEmployeeDetail>(
-        `/integration/employees/${summary.id}`,
-      );
-      const wrote = await this.upsertEmployee(integration.restaurantId, detail);
-      if (wrote) {
-        saved += 1;
+      let detail: IntegrationEmployeeDetail = { ...summary, vehicle: null };
+      try {
+        detail = await client.getItem<IntegrationEmployeeDetail>(
+          `/integration/employees/${summary.id}`,
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'detail fetch failed';
+        this.logger.warn(`Employee ${summary.id} detail skipped: ${message}`);
+      }
+      try {
+        const wrote = await this.upsertEmployee(integration.restaurantId, detail);
+        if (wrote) {
+          saved += 1;
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'upsert failed';
+        this.logger.warn(`Employee ${summary.id} upsert skipped: ${message}`);
       }
     }
+
+    await this.linkMealOrdersToEmployees(integration.restaurantId);
 
     await this.prisma.integration.update({
       where: { id },
@@ -240,7 +255,8 @@ export class IntegrationsCommandService {
       return false;
     }
 
-    const employeeCode = clip(employee.code, 32) || null;
+    const rawCode = employee.code?.trim() ?? '';
+    const employeeCode = rawCode.length > 0 ? rawCode.slice(0, 32) : null;
     const data = {
       employeeCode,
       firstName: clip(employee.firstName, 100, '—'),
@@ -258,7 +274,12 @@ export class IntegrationsCommandService {
         OR: [
           { externalId: employee.id },
           ...(data.employeeCode
-            ? [{ employeeCode: data.employeeCode, externalId: null }]
+            ? [
+                {
+                  employeeCode: { equals: data.employeeCode, mode: 'insensitive' as const },
+                  externalId: null,
+                },
+              ]
             : []),
         ],
       },
@@ -278,6 +299,42 @@ export class IntegrationsCommandService {
       data: { ...data, rowVersion: { increment: 1 } },
     });
     return true;
+  }
+
+  /** Attach `employeeId` on meal orders when staff exist locally (code match). */
+  private async linkMealOrdersToEmployees(restaurantId: string) {
+    const pending = await this.prisma.employeeMealOrder.findMany({
+      where: {
+        employeeId: null,
+        employeeCode: { not: '' },
+        mealDay: { restaurantId, deletedAt: null },
+      },
+      select: { id: true, employeeCode: true },
+      take: 500,
+    });
+    if (!pending.length) {
+      return;
+    }
+
+    const employees = await this.prisma.employee.findMany({
+      where: { restaurantId, deletedAt: null, employeeCode: { not: null } },
+      select: { id: true, employeeCode: true },
+    });
+    const byCode = new Map<string, string>();
+    for (const row of employees) {
+      const code = row.employeeCode?.trim();
+      if (!code) continue;
+      byCode.set(employeeCodeKey(code), row.id);
+    }
+
+    for (const order of pending) {
+      const employeeId = byCode.get(employeeCodeKey(order.employeeCode));
+      if (!employeeId) continue;
+      await this.prisma.employeeMealOrder.update({
+        where: { id: order.id },
+        data: { employeeId },
+      });
+    }
   }
 
   private async ensureRestaurantId() {

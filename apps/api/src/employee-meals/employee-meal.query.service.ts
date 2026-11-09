@@ -3,6 +3,7 @@ import { Prisma } from '@generated/prisma/client';
 import type { Paginated } from '@packages/types';
 
 import { NotFoundAppException } from '@/common/exceptions';
+import { employeeCodeKey, normalizeEmployeeCode } from '@/common/utils/employee-code';
 import { paginated, resolvePagination } from '@/common/utils/pagination';
 import { PrismaService } from '@/prisma/prisma.service';
 
@@ -223,12 +224,67 @@ export class EmployeeMealQueryService {
       this.prisma.employeeMealOrder.count({ where }),
     ]);
     const extras = await this.loadDriverFields(rows.map((row) => row.id));
+    const byCode = await this.employeesForMealOrderRows(rows);
     return paginated(
-      rows.map((row) => toMealOrder({ ...row, ...extras.get(row.id) })),
+      rows.map((row) => {
+        const linked =
+          row.employee ??
+          byCode.get(employeeCodeKey(row.employeeCode)) ??
+          null;
+        return toMealOrder({
+          ...row,
+          employee: linked,
+          ...extras.get(row.id),
+        });
+      }),
       total,
       page,
       limit,
     );
+  }
+
+  private async employeesForMealOrderRows(
+    rows: {
+      employeeCode: string;
+      employee: { firstName: string; lastName: string } | null;
+      mealDay: { restaurantId: string };
+    }[],
+  ) {
+    const restaurantId = rows[0]?.mealDay.restaurantId;
+    if (!restaurantId) {
+      return new Map<string, { firstName: string; lastName: string }>();
+    }
+    const codes = [
+      ...new Set(
+        rows
+          .filter((row) => !row.employee)
+          .map((row) => normalizeEmployeeCode(row.employeeCode))
+          .filter((code) => code.length > 0),
+      ),
+    ];
+    if (!codes.length) {
+      return new Map();
+    }
+    const employees = await this.prisma.employee.findMany({
+      where: {
+        restaurantId,
+        deletedAt: null,
+        OR: codes.map((code) => ({
+          employeeCode: { equals: code, mode: 'insensitive' },
+        })),
+      },
+      select: { firstName: true, lastName: true, employeeCode: true },
+    });
+    const map = new Map<string, { firstName: string; lastName: string }>();
+    for (const employee of employees) {
+      const code = employee.employeeCode?.trim();
+      if (!code) continue;
+      map.set(employeeCodeKey(code), {
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+      });
+    }
+    return map;
   }
 
   async getOrder(id: string) {

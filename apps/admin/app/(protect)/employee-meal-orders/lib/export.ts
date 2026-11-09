@@ -32,7 +32,7 @@ export async function exportMealOrders(options: { from: string; to: string; sear
       {
         header: 'Ажилтан',
         width: 28,
-        value: (row) => (row.employeeId ? row.employeeName : 'Ажилтан олдсонгүй'),
+        value: (row) => row.employeeName?.trim() || row.employeeCode?.trim() || '—',
       },
       { header: 'Код', width: 16, value: (row) => row.employeeCode },
       { header: 'Улсын дугаар', width: 16, value: (row) => row.plateNumber?.trim() || '' },

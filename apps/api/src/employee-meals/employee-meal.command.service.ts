@@ -33,6 +33,8 @@ import {
   todayDateOnly,
   toTimeString,
 } from './employee-meal.mapper';
+import { normalizeEmployeeCode } from '@/common/utils/employee-code';
+
 import { EmployeeMealQueryService } from './employee-meal.query.service';
 
 function normalizeOptional(value?: string | null) {
@@ -353,7 +355,7 @@ export class EmployeeMealCommandService {
     if (!day || day.status === 'CANCELLED' || day.status === 'CLOSED') {
       throw new NotFoundAppException();
     }
-    const code = input.employeeCode.trim();
+    const code = normalizeEmployeeCode(input.employeeCode);
     if (!code) {
       throw new BadRequestAppException();
     }
@@ -406,7 +408,7 @@ export class EmployeeMealCommandService {
   }
 
   async requestOrder(input: CreateEmployeeMealOrderDto) {
-    const code = input.employeeCode.trim();
+    const code = normalizeEmployeeCode(input.employeeCode);
     if (!code) {
       throw new BadRequestAppException();
     }
@@ -677,8 +679,13 @@ export class EmployeeMealCommandService {
   }
 
   private async findOrderableEmployee(restaurantId: string, employeeCode: string) {
+    const code = normalizeEmployeeCode(employeeCode);
     const employee = await this.prisma.employee.findFirst({
-      where: { restaurantId, employeeCode },
+      where: {
+        restaurantId,
+        deletedAt: null,
+        employeeCode: { equals: code, mode: 'insensitive' },
+      },
       select: { id: true, status: true, deletedAt: true },
     });
     if (!employee) {

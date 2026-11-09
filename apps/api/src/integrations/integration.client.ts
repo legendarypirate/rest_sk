@@ -2,6 +2,11 @@ import { Logger } from '@nestjs/common';
 
 import { BadGatewayAppException } from '@/common/exceptions';
 
+import {
+  integrationItemData,
+  integrationListItems,
+  integrationListTotalPages,
+} from './integration-response';
 import { integrationTokens, readTokenPayload } from './integration.token';
 
 type IntegrationCall = {
@@ -13,7 +18,7 @@ type IntegrationCall = {
 
 type ListEnvelope<T> = {
   success?: boolean;
-  data?: T[] | { data?: T[] };
+  data?: T[] | { data?: T[]; items?: T[]; totalPages?: number };
   page?: number;
   limit?: number;
   total?: number;
@@ -43,9 +48,8 @@ export class IntegrationClient {
         page,
         limit: 100,
       });
-      const data = Array.isArray(payload.data) ? payload.data : [];
-      items.push(...data);
-      totalPages = payload.totalPages ?? page;
+      items.push(...integrationListItems(payload));
+      totalPages = integrationListTotalPages(payload, page);
       page += 1;
     }
 
@@ -54,10 +58,11 @@ export class IntegrationClient {
 
   async getItem<T>(path: string): Promise<T> {
     const payload = await this.request<ItemEnvelope<T>>(path);
-    if (!payload.data) {
+    const data = integrationItemData(payload);
+    if (!data) {
       throw new BadGatewayAppException();
     }
-    return payload.data;
+    return data;
   }
 
   private async request<T>(
@@ -118,7 +123,12 @@ export class IntegrationClient {
           throw new BadGatewayAppException();
         }
 
-        return readTokenPayload((await response.json()) as never);
+        const body = (await response.json()) as Record<string, unknown>;
+        const tokenBody =
+          body.success === true && body.data && typeof body.data === 'object'
+            ? (body.data as Record<string, unknown>)
+            : body;
+        return readTokenPayload(tokenBody as never);
       },
       force,
     );

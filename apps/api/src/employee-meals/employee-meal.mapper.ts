@@ -188,9 +188,7 @@ export function toMealOrder(row: {
     mealTypeName: row.mealDay.mealType.name,
     employeeId: row.employeeId,
     employeeCode: row.employeeCode,
-    employeeName: row.employee
-      ? `${row.employee.lastName} ${row.employee.firstName}`
-      : 'Ажилтан олдсонгүй',
+    employeeName: formatMealOrderEmployeeName(row.employee, row.employeeCode),
     plateNumber: storedPlate ?? plateNumberOf(row.employee?.vehicle),
     fulfillmentType: row.fulfillmentType ?? null,
     deliveryLocation:
@@ -204,6 +202,20 @@ export function toMealOrder(row: {
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
+}
+
+function formatMealOrderEmployeeName(
+  employee: { firstName: string; lastName: string } | null,
+  employeeCode: string,
+) {
+  if (employee) {
+    const name = `${employee.lastName} ${employee.firstName}`.trim();
+    if (name.length > 0) {
+      return name;
+    }
+  }
+  const code = employeeCode.trim();
+  return code.length > 0 ? code : '—';
 }
 
 function plateNumberOf(vehicle: unknown) {
