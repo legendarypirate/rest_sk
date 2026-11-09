@@ -163,7 +163,8 @@ export function codesMissingMealOrderEmployeeName(
       employee: row.employee,
       index,
     });
-    if (employeeNameFromParts(resolved ?? row.employee)) {
+    const candidate = resolved ?? row.employee;
+    if (candidate && employeeNameFromParts(candidate)) {
       continue;
     }
     const code = normalizeEmployeeCode(row.employeeCode);

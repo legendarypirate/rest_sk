@@ -319,12 +319,15 @@ export class EmployeeMealQueryService {
           select: { metadata: true },
         });
         const metadata = mergeMealOrderMetadata(existing?.metadata, row.displayName);
+        const data: Prisma.EmployeeMealOrderUncheckedUpdateManyInput = {
+          employeeId: row.employeeId,
+        };
+        if (metadata !== undefined && metadata !== null) {
+          data.metadata = metadata as Prisma.InputJsonValue;
+        }
         await this.prisma.employeeMealOrder.updateMany({
           where: { id: row.orderId },
-          data: {
-            employeeId: row.employeeId,
-            ...(metadata !== undefined ? { metadata } : {}),
-          },
+          data,
         });
       } catch {
         // best-effort while listing
