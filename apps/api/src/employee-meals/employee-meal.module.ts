@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { IntegrationsModule } from '@/integrations/integrations.module';
 import { RealtimeModule } from '@/realtime';
 
 import { MealCommandService } from '@/employee-meal-policies/meals/meal.command.service';
@@ -16,7 +17,7 @@ import {
 import { EmployeeMealQueryService } from './employee-meal.query.service';
 
 @Module({
-  imports: [RealtimeModule],
+  imports: [RealtimeModule, IntegrationsModule],
   controllers: [
     EmployeeMealTypesController,
     EmployeeOrderSchedulesController,

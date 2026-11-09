@@ -16,6 +16,30 @@ export type MealOrderEmployeeIndex = {
   byCode: Map<string, MealOrderEmployeeView>;
 };
 
+export function mergeMealOrderEmployeeIndex(
+  left: MealOrderEmployeeIndex,
+  right: MealOrderEmployeeIndex,
+): MealOrderEmployeeIndex {
+  const byId = new Map(left.byId);
+  const byCode = new Map(left.byCode);
+
+  for (const [id, view] of right.byId) {
+    const existing = byId.get(id);
+    if (!existing || !employeeNameFromParts(existing)) {
+      byId.set(id, view);
+    }
+  }
+
+  for (const [key, view] of right.byCode) {
+    const existing = byCode.get(key);
+    if (!existing || !employeeNameFromParts(existing)) {
+      byCode.set(key, view);
+    }
+  }
+
+  return { byId, byCode };
+}
+
 export function buildMealOrderEmployeeIndex(
   employees: Array<
     MealOrderEmployeeView & {
@@ -117,4 +141,35 @@ export function codesNeedingEmployeeLookup(
         .filter((code) => code.length > 0),
     ),
   ];
+}
+
+export function codesMissingMealOrderEmployeeName(
+  rows: Array<{
+    employeeCode: string;
+    employeeId: string | null;
+    metadata?: unknown;
+    employee: { firstName: string; lastName: string } | null;
+  }>,
+  index: MealOrderEmployeeIndex,
+) {
+  const missing: string[] = [];
+  for (const row of rows) {
+    if (readMetadataEmployeeName(row.metadata)) {
+      continue;
+    }
+    const resolved = resolveMealOrderEmployee({
+      employeeId: row.employeeId,
+      employeeCode: row.employeeCode,
+      employee: row.employee,
+      index,
+    });
+    if (employeeNameFromParts(resolved ?? row.employee)) {
+      continue;
+    }
+    const code = normalizeEmployeeCode(row.employeeCode);
+    if (code.length > 0) {
+      missing.push(code);
+    }
+  }
+  return [...new Set(missing)];
 }

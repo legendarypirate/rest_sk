@@ -3,12 +3,22 @@ import { Prisma } from '@generated/prisma/client';
 import type { Paginated } from '@packages/types';
 
 import { NotFoundAppException } from '@/common/exceptions';
+import { IntegrationsCommandService } from '@/integrations/integrations.command.service';
+
 import {
   buildMealOrderEmployeeIndex,
+  codesMissingMealOrderEmployeeName,
+  codesNeedingEmployeeLookup,
   employeeNameFromParts,
+  mergeMealOrderEmployeeIndex,
+  type MealOrderEmployeeIndex,
   readMetadataEmployeeName,
   resolveMealOrderEmployee,
 } from './employee-meal-order-employee';
+import {
+  employeeCodeLookupKeys,
+  lookupByEmployeeCode,
+} from '@/common/utils/employee-code';
 import { paginated, resolvePagination } from '@/common/utils/pagination';
 import { PrismaService } from '@/prisma/prisma.service';
 
@@ -63,7 +73,10 @@ function mealDayDateWhere(
 
 @Injectable()
 export class EmployeeMealQueryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly integrations: IntegrationsCommandService,
+  ) {}
 
   async listTypes(query: ListEmployeeMealTypesQueryDto) {
     const { page, limit, skip, take } = resolvePagination(
@@ -229,7 +242,28 @@ export class EmployeeMealQueryService {
       this.prisma.employeeMealOrder.count({ where }),
     ]);
     const extras = await this.loadDriverFields(rows.map((row) => row.id));
-    const index = await this.mealOrderEmployeeIndex(rows);
+    const restaurantId = this.mealOrderRestaurantId(rows);
+    let index = await this.mealOrderEmployeeIndex(rows);
+    if (restaurantId) {
+      index = await this.supplementEmployeeIndexByCodes(
+        restaurantId,
+        index,
+        codesNeedingEmployeeLookup(rows),
+      );
+    }
+    const missingCodes = codesMissingMealOrderEmployeeName(rows, index);
+    if (restaurantId && missingCodes.length > 0) {
+      const hydrated = await this.integrations.syncEmployeesForCodes(
+        restaurantId,
+        missingCodes,
+      );
+      if (hydrated.length > 0) {
+        index = mergeMealOrderEmployeeIndex(
+          index,
+          buildMealOrderEmployeeIndex(hydrated),
+        );
+      }
+    }
     const relink: Array<{
       orderId: string;
       employeeId: string;
@@ -250,16 +284,16 @@ export class EmployeeMealQueryService {
           }
         : row.employee;
       const displayName = resolved ? employeeNameFromParts(resolved) : null;
-      if (
-        resolved?.id &&
-        displayName &&
-        (!row.employeeId || !readMetadataEmployeeName(row.metadata))
-      ) {
-        relink.push({
-          orderId: row.id,
-          employeeId: resolved.id,
-          displayName,
-        });
+      if (resolved?.id && displayName) {
+        const needsId = !row.employeeId;
+        const needsName = !readMetadataEmployeeName(row.metadata);
+        if (needsId || needsName) {
+          relink.push({
+            orderId: row.id,
+            employeeId: resolved.id,
+            displayName,
+          });
+        }
       }
       return toMealOrder({
         ...row,
@@ -280,11 +314,16 @@ export class EmployeeMealQueryService {
   ) {
     for (const row of rows) {
       try {
+        const existing = await this.prisma.employeeMealOrder.findFirst({
+          where: { id: row.orderId },
+          select: { metadata: true },
+        });
+        const metadata = mergeMealOrderMetadata(existing?.metadata, row.displayName);
         await this.prisma.employeeMealOrder.updateMany({
           where: { id: row.orderId },
           data: {
             employeeId: row.employeeId,
-            metadata: { employeeDisplayName: row.displayName },
+            ...(metadata !== undefined ? { metadata } : {}),
           },
         });
       } catch {
@@ -293,15 +332,20 @@ export class EmployeeMealQueryService {
     }
   }
 
+  private mealOrderRestaurantId(rows: { mealDay: { restaurantId: string } }[]) {
+    const ids = [...new Set(rows.map((row) => row.mealDay.restaurantId))];
+    return ids.length === 1 ? ids[0]! : ids[0];
+  }
+
   private async mealOrderEmployeeIndex(
     rows: { mealDay: { restaurantId: string } }[],
   ) {
-    const restaurantId = rows[0]?.mealDay.restaurantId;
-    if (!restaurantId) {
+    const restaurantIds = [...new Set(rows.map((row) => row.mealDay.restaurantId))];
+    if (!restaurantIds.length) {
       return buildMealOrderEmployeeIndex([]);
     }
     const employees = await this.prisma.employee.findMany({
-      where: { restaurantId, deletedAt: null },
+      where: { restaurantId: { in: restaurantIds }, deletedAt: null },
       select: {
         id: true,
         firstName: true,
@@ -311,6 +355,36 @@ export class EmployeeMealQueryService {
       },
     });
     return buildMealOrderEmployeeIndex(employees);
+  }
+
+  private async supplementEmployeeIndexByCodes(
+    restaurantId: string,
+    index: MealOrderEmployeeIndex,
+    codes: string[],
+  ) {
+    const targets = codes.filter((code) => {
+      const resolved = lookupByEmployeeCode(index.byCode, code);
+      return !resolved || !employeeNameFromParts(resolved);
+    });
+    if (!targets.length) {
+      return index;
+    }
+    const or = targets.flatMap((code) =>
+      employeeCodeLookupKeys(code).map((variant) => ({
+        employeeCode: { equals: variant, mode: 'insensitive' as const },
+      })),
+    );
+    const rows = await this.prisma.employee.findMany({
+      where: { restaurantId, deletedAt: null, OR: or },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        employeeCode: true,
+        vehicle: true,
+      },
+    });
+    return mergeMealOrderEmployeeIndex(index, buildMealOrderEmployeeIndex(rows));
   }
 
   async getOrder(id: string) {

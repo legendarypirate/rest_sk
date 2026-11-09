@@ -16,10 +16,15 @@ import { PrismaService } from '@/prisma/prisma.service';
 import type { IntegrationEmployee, IntegrationEmployeeDetail, IntegrationRef } from '@packages/types';
 
 import {
+  employeeCodeLookupKeys,
   lookupByEmployeeCode,
   normalizeEmployeeCode,
   registerEmployeeCodeKeys,
 } from '@/common/utils/employee-code';
+import {
+  employeeDisplayNameMetadata,
+  employeeNameFromParts,
+} from '@/employee-meals/employee-meal-order-employee';
 
 import type { UpsertIntegrationDto } from './dto/integration.dto';
 import { INTEGRATION_APIS } from './integration.catalog';
@@ -261,10 +266,12 @@ export class IntegrationsCommandService {
 
     const rawCode = employee.code?.trim() ?? '';
     const employeeCode = rawCode.length > 0 ? rawCode.slice(0, 32) : null;
+    const incomingFirst = clipName(employee.firstName, 100);
+    const incomingLast = clipName(employee.lastName, 100);
     const data = {
       employeeCode,
-      firstName: clip(employee.firstName, 100, '—'),
-      lastName: clip(employee.lastName, 100, '—'),
+      firstName: incomingFirst,
+      lastName: incomingLast,
       department: labelOf(employee.department),
       position: labelOf(employee.position),
       externalId: employee.id,
@@ -291,7 +298,13 @@ export class IntegrationsCommandService {
 
     if (!existing) {
       await this.prisma.employee.create({
-        data: { restaurantId, ...data, status: mapStatus(employee.status) },
+        data: {
+          restaurantId,
+          ...data,
+          firstName: data.firstName || '—',
+          lastName: data.lastName || '—',
+          status: mapStatus(employee.status),
+        },
       });
       return true;
     }
@@ -300,9 +313,99 @@ export class IntegrationsCommandService {
     // just because they are still active in MLOS.
     await this.prisma.employee.update({
       where: { id: existing.id },
-      data: { ...data, rowVersion: { increment: 1 } },
+      data: {
+        ...data,
+        firstName: mergeSyncedName(existing.firstName, data.firstName),
+        lastName: mergeSyncedName(existing.lastName, data.lastName),
+        rowVersion: { increment: 1 },
+      },
     });
     return true;
+  }
+
+  /**
+   * Best-effort pull of employees from MLOS when local rows or names are missing.
+   * Used while listing meal orders so historical orders show HR names.
+   */
+  async syncEmployeesForCodes(restaurantId: string, codes: string[]) {
+    const unique = [
+      ...new Set(codes.map((code) => normalizeEmployeeCode(code)).filter((code) => code.length > 0)),
+    ].slice(0, 30);
+    if (!unique.length) {
+      return [];
+    }
+
+    const integration = await this.prisma.integration.findFirst({
+      where: {
+        restaurantId,
+        deletedAt: null,
+        isEnabled: true,
+        apis: { some: { scope: 'employees:read', isEnabled: true } },
+      },
+    });
+    if (!integration) {
+      return [];
+    }
+
+    const client = new IntegrationClient({
+      id: integration.id,
+      baseUrl: integration.baseUrl,
+      clientId: integration.clientId,
+      clientSecret: decryptSecret(integration.secretCipher, this.key),
+    });
+
+    const saved: Array<{
+      id: string;
+      firstName: string;
+      lastName: string;
+      employeeCode: string | null;
+      vehicle: unknown;
+    }> = [];
+
+    for (const code of unique) {
+      try {
+        const listed = await client.listAll<IntegrationEmployee>('/integration/employees', {
+          search: code,
+          limit: 20,
+        });
+        const match = listed.find((row) => integrationEmployeeCodesMatch(code, row.code));
+        if (!match?.id) {
+          continue;
+        }
+        let detail: IntegrationEmployeeDetail = { ...match, vehicle: null };
+        try {
+          detail = await client.getItem<IntegrationEmployeeDetail>(
+            `/integration/employees/${match.id}`,
+          );
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'detail fetch failed';
+          this.logger.warn(`Employee ${match.id} detail skipped: ${message}`);
+        }
+        await this.upsertEmployee(restaurantId, detail);
+        const local = await this.prisma.employee.findFirst({
+          where: {
+            restaurantId,
+            deletedAt: null,
+            OR: [{ externalId: match.id }, ...(match.code ? [{ employeeCode: match.code }] : [])],
+          },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            employeeCode: true,
+            vehicle: true,
+          },
+        });
+        if (local && employeeNameFromParts(local)) {
+          saved.push(local);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'lookup failed';
+        this.logger.warn(`Employee sync for code ${code} skipped: ${message}`);
+      }
+    }
+
+    return saved;
   }
 
   /** Attach `employeeId` on meal orders when staff exist locally (code match). */
@@ -322,21 +425,25 @@ export class IntegrationsCommandService {
 
     const employees = await this.prisma.employee.findMany({
       where: { restaurantId, deletedAt: null, employeeCode: { not: null } },
-      select: { id: true, employeeCode: true },
+      select: { id: true, employeeCode: true, firstName: true, lastName: true },
     });
-    const byCode = new Map<string, string>();
+    const byCode = new Map<string, { id: string; firstName: string; lastName: string }>();
     for (const row of employees) {
       const code = row.employeeCode?.trim();
       if (!code) continue;
-      registerEmployeeCodeKeys(byCode, code, row.id);
+      registerEmployeeCodeKeys(byCode, code, row);
     }
 
     for (const order of pending) {
-      const employeeId = lookupByEmployeeCode(byCode, order.employeeCode);
-      if (!employeeId) continue;
+      const employee = lookupByEmployeeCode(byCode, order.employeeCode);
+      if (!employee) continue;
+      const metadata = employeeDisplayNameMetadata(employee);
       await this.prisma.employeeMealOrder.update({
         where: { id: order.id },
-        data: { employeeId },
+        data: {
+          employeeId: employee.id,
+          ...(metadata ? { metadata } : {}),
+        },
       });
     }
   }
@@ -389,6 +496,40 @@ function labelOf(ref: IntegrationRef | null | undefined) {
 function clip(value: string | null | undefined, max: number, fallback = '') {
   const trimmed = value?.trim() ?? '';
   return (trimmed.length > 0 ? trimmed : fallback).slice(0, max);
+}
+
+function clipName(value: string | null | undefined, max: number) {
+  const trimmed = value?.trim() ?? '';
+  if (!trimmed || trimmed === '—') {
+    return '';
+  }
+  return trimmed.slice(0, max);
+}
+
+function mergeSyncedName(current: string, incoming: string) {
+  if (incoming.length > 0) {
+    return incoming;
+  }
+  if (current.trim() && current.trim() !== '—') {
+    return current;
+  }
+  return incoming || current;
+}
+
+function integrationEmployeeCodesMatch(orderCode: string, integrationCode: string | null | undefined) {
+  const left = normalizeEmployeeCode(orderCode);
+  if (!left.length) {
+    return false;
+  }
+  const right = normalizeEmployeeCode(integrationCode ?? '');
+  if (!right.length) {
+    return false;
+  }
+  if (left === right) {
+    return true;
+  }
+  const leftKeys = new Set(employeeCodeLookupKeys(left));
+  return employeeCodeLookupKeys(right).some((key) => leftKeys.has(key));
 }
 
 function mapStatus(status: IntegrationEmployeeDetail['status'] | null): EmployeeStatus {

@@ -10,5 +10,6 @@ import { IntegrationsScheduler } from './integrations.scheduler';
   imports: [ScheduleModule.forRoot()],
   controllers: [IntegrationsController],
   providers: [IntegrationsQueryService, IntegrationsCommandService, IntegrationsScheduler],
+  exports: [IntegrationsCommandService],
 })
 export class IntegrationsModule {}
