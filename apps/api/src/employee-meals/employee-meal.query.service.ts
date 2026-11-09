@@ -3,7 +3,11 @@ import { Prisma } from '@generated/prisma/client';
 import type { Paginated } from '@packages/types';
 
 import { NotFoundAppException } from '@/common/exceptions';
-import { employeeCodeKey, normalizeEmployeeCode } from '@/common/utils/employee-code';
+import {
+  lookupByEmployeeCode,
+  normalizeEmployeeCode,
+  registerEmployeeCodeKeys,
+} from '@/common/utils/employee-code';
 import { paginated, resolvePagination } from '@/common/utils/pagination';
 import { PrismaService } from '@/prisma/prisma.service';
 
@@ -225,22 +229,43 @@ export class EmployeeMealQueryService {
     ]);
     const extras = await this.loadDriverFields(rows.map((row) => row.id));
     const byCode = await this.employeesForMealOrderRows(rows);
-    return paginated(
-      rows.map((row) => {
-        const linked =
-          row.employee ??
-          byCode.get(employeeCodeKey(row.employeeCode)) ??
-          null;
-        return toMealOrder({
-          ...row,
-          employee: linked,
-          ...extras.get(row.id),
+    const relink: Array<{ orderId: string; employeeId: string }> = [];
+    const mapped = rows.map((row) => {
+      const resolved = lookupByEmployeeCode(byCode, row.employeeCode);
+      const linked =
+        row.employee ??
+        (resolved
+          ? { firstName: resolved.firstName, lastName: resolved.lastName }
+          : null);
+      if (!row.employeeId && resolved?.id) {
+        relink.push({ orderId: row.id, employeeId: resolved.id });
+      }
+      return toMealOrder({
+        ...row,
+        employee: linked,
+        employeeId: row.employeeId ?? resolved?.id ?? null,
+        ...extras.get(row.id),
+      });
+    });
+    if (relink.length > 0) {
+      void this.relinkMealOrderEmployees(relink);
+    }
+    return paginated(mapped, total, page, limit);
+  }
+
+  private async relinkMealOrderEmployees(
+    rows: Array<{ orderId: string; employeeId: string }>,
+  ) {
+    for (const row of rows) {
+      try {
+        await this.prisma.employeeMealOrder.updateMany({
+          where: { id: row.orderId, employeeId: null },
+          data: { employeeId: row.employeeId },
         });
-      }),
-      total,
-      page,
-      limit,
-    );
+      } catch {
+        // best-effort while listing
+      }
+    }
   }
 
   private async employeesForMealOrderRows(
@@ -252,7 +277,7 @@ export class EmployeeMealQueryService {
   ) {
     const restaurantId = rows[0]?.mealDay.restaurantId;
     if (!restaurantId) {
-      return new Map<string, { firstName: string; lastName: string }>();
+      return new Map<string, { id: string; firstName: string; lastName: string }>();
     }
     const codes = [
       ...new Set(
@@ -269,17 +294,16 @@ export class EmployeeMealQueryService {
       where: {
         restaurantId,
         deletedAt: null,
-        OR: codes.map((code) => ({
-          employeeCode: { equals: code, mode: 'insensitive' },
-        })),
+        employeeCode: { not: null },
       },
-      select: { firstName: true, lastName: true, employeeCode: true },
+      select: { id: true, firstName: true, lastName: true, employeeCode: true },
     });
-    const map = new Map<string, { firstName: string; lastName: string }>();
+    const map = new Map<string, { id: string; firstName: string; lastName: string }>();
     for (const employee of employees) {
       const code = employee.employeeCode?.trim();
       if (!code) continue;
-      map.set(employeeCodeKey(code), {
+      registerEmployeeCodeKeys(map, code, {
+        id: employee.id,
         firstName: employee.firstName,
         lastName: employee.lastName,
       });
@@ -296,7 +320,19 @@ export class EmployeeMealQueryService {
       throw new NotFoundAppException();
     }
     const extras = await this.loadDriverFields([id]);
-    return toMealOrder({ ...row, ...extras.get(id) });
+    const byCode = await this.employeesForMealOrderRows([row]);
+    const resolved = lookupByEmployeeCode(byCode, row.employeeCode);
+    const linked =
+      row.employee ??
+      (resolved
+        ? { firstName: resolved.firstName, lastName: resolved.lastName }
+        : null);
+    return toMealOrder({
+      ...row,
+      employee: linked,
+      employeeId: row.employeeId ?? resolved?.id ?? null,
+      ...extras.get(id),
+    });
   }
 
   private async loadDriverFields(ids: string[]) {

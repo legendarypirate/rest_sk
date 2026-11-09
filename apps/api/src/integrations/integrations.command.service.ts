@@ -15,7 +15,11 @@ import { PrismaService } from '@/prisma/prisma.service';
 
 import type { IntegrationEmployee, IntegrationEmployeeDetail, IntegrationRef } from '@packages/types';
 
-import { employeeCodeKey, normalizeEmployeeCode } from '@/common/utils/employee-code';
+import {
+  lookupByEmployeeCode,
+  normalizeEmployeeCode,
+  registerEmployeeCodeKeys,
+} from '@/common/utils/employee-code';
 
 import type { UpsertIntegrationDto } from './dto/integration.dto';
 import { INTEGRATION_APIS } from './integration.catalog';
@@ -324,11 +328,11 @@ export class IntegrationsCommandService {
     for (const row of employees) {
       const code = row.employeeCode?.trim();
       if (!code) continue;
-      byCode.set(employeeCodeKey(code), row.id);
+      registerEmployeeCodeKeys(byCode, code, row.id);
     }
 
     for (const order of pending) {
-      const employeeId = byCode.get(employeeCodeKey(order.employeeCode));
+      const employeeId = lookupByEmployeeCode(byCode, order.employeeCode);
       if (!employeeId) continue;
       await this.prisma.employeeMealOrder.update({
         where: { id: order.id },

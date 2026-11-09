@@ -206,7 +206,7 @@ export function toMealOrder(row: {
 
 function formatMealOrderEmployeeName(
   employee: { firstName: string; lastName: string } | null,
-  employeeCode: string,
+  _employeeCode: string,
 ) {
   if (employee) {
     const name = `${employee.lastName} ${employee.firstName}`.trim();
@@ -214,8 +214,7 @@ function formatMealOrderEmployeeName(
       return name;
     }
   }
-  const code = employeeCode.trim();
-  return code.length > 0 ? code : '—';
+  return '—';
 }
 
 function plateNumberOf(vehicle: unknown) {

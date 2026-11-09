@@ -33,7 +33,10 @@ import {
   todayDateOnly,
   toTimeString,
 } from './employee-meal.mapper';
-import { normalizeEmployeeCode } from '@/common/utils/employee-code';
+import {
+  employeeCodeLookupKeys,
+  normalizeEmployeeCode,
+} from '@/common/utils/employee-code';
 
 import { EmployeeMealQueryService } from './employee-meal.query.service';
 
@@ -680,11 +683,14 @@ export class EmployeeMealCommandService {
 
   private async findOrderableEmployee(restaurantId: string, employeeCode: string) {
     const code = normalizeEmployeeCode(employeeCode);
+    const variants = employeeCodeLookupKeys(code);
     const employee = await this.prisma.employee.findFirst({
       where: {
         restaurantId,
         deletedAt: null,
-        employeeCode: { equals: code, mode: 'insensitive' },
+        OR: variants.map((variant) => ({
+          employeeCode: { equals: variant, mode: 'insensitive' },
+        })),
       },
       select: { id: true, status: true, deletedAt: true },
     });
