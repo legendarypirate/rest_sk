@@ -167,7 +167,7 @@ export function toMealOrder(row: {
   employee: {
     firstName: string;
     lastName: string;
-    vehicle: unknown;
+    vehicle?: unknown;
   } | null;
   plateNumber?: string | null;
   fulfillmentType?: EmployeeMealOrderItem['fulfillmentType'];

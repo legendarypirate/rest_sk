@@ -235,7 +235,11 @@ export class EmployeeMealQueryService {
       const linked =
         row.employee ??
         (resolved
-          ? { firstName: resolved.firstName, lastName: resolved.lastName }
+          ? {
+              firstName: resolved.firstName,
+              lastName: resolved.lastName,
+              vehicle: resolved.vehicle,
+            }
           : null);
       if (!row.employeeId && resolved?.id) {
         relink.push({ orderId: row.id, employeeId: resolved.id });
@@ -277,7 +281,10 @@ export class EmployeeMealQueryService {
   ) {
     const restaurantId = rows[0]?.mealDay.restaurantId;
     if (!restaurantId) {
-      return new Map<string, { id: string; firstName: string; lastName: string }>();
+      return new Map<
+        string,
+        { id: string; firstName: string; lastName: string; vehicle: unknown }
+      >();
     }
     const codes = [
       ...new Set(
@@ -296,9 +303,18 @@ export class EmployeeMealQueryService {
         deletedAt: null,
         employeeCode: { not: null },
       },
-      select: { id: true, firstName: true, lastName: true, employeeCode: true },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        employeeCode: true,
+        vehicle: true,
+      },
     });
-    const map = new Map<string, { id: string; firstName: string; lastName: string }>();
+    const map = new Map<
+      string,
+      { id: string; firstName: string; lastName: string; vehicle: unknown }
+    >();
     for (const employee of employees) {
       const code = employee.employeeCode?.trim();
       if (!code) continue;
@@ -306,6 +322,7 @@ export class EmployeeMealQueryService {
         id: employee.id,
         firstName: employee.firstName,
         lastName: employee.lastName,
+        vehicle: employee.vehicle,
       });
     }
     return map;
@@ -325,7 +342,11 @@ export class EmployeeMealQueryService {
     const linked =
       row.employee ??
       (resolved
-        ? { firstName: resolved.firstName, lastName: resolved.lastName }
+        ? {
+            firstName: resolved.firstName,
+            lastName: resolved.lastName,
+            vehicle: resolved.vehicle,
+          }
         : null);
     return toMealOrder({
       ...row,
