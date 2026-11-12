@@ -40,6 +40,7 @@ import {
 } from './dto/employee-meal.dto';
 import { EmployeeMealCommandService } from './employee-meal.command.service';
 import { EmployeeMealQueryService } from './employee-meal.query.service';
+import { todayDateOnly } from './employee-meal.mapper';
 
 function contextOf(request: Request) {
   return authRequestContext(request);
@@ -225,6 +226,17 @@ export class EmployeeMealOrdersController {
   @Get()
   @RequirePermissions('platform:employee-meal-orders:read')
   list(@Query() query: ListEmployeeMealOrdersQueryDto) {
+    return this.queries.listOrders(query);
+  }
+
+  /** Kitchen display for MLOS — same list as admin, defaults to today. */
+  @Get('board')
+  @Public()
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  listBoard(@Query() query: ListEmployeeMealOrdersQueryDto) {
+    const today = todayDateOnly();
+    query.from = query.from ?? today;
+    query.to = query.to ?? query.from ?? today;
     return this.queries.listOrders(query);
   }
 
